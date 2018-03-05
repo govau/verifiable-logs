@@ -20,12 +20,11 @@ psql "dbname=verifiable host=localhost user=verifiable password=verifiable port=
 Build and push:
 
 ```bash
-cfy create-service postgres shared govauverifiabledemo
+cfy create-service postgres shared govauverifiabledemo-db
 cfy create-user-provided-service govauverifiabledemo-ups -p '{"VDB_SECRET":"secret"}'
-
 
 # Build and push
 dep ensure
-GOOS=linux GOARCH=amd64 go build -o cf/verifiable-log/certwatch cmd/verifiable-log/main-verifiable-log.go
+GOOS=linux GOARCH=amd64 go build -o cf/verifiable-log/verifiable-log cmd/verifiable-log/main-verifiable-log.go
 cfy push -f cf/verifiable-log/manifest.yml -p cf/verifiable-log
 ```
