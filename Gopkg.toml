@@ -30,6 +30,18 @@
   version = "1.17.0"
 
 [[constraint]]
+  branch = "master"
+  name = "github.com/continusec/verifiabledatastructures"
+
+[[constraint]]
+  name = "github.com/golang/protobuf"
+  version = "1.0.0"
+
+[[constraint]]
+  name = "github.com/govau/cf-common"
+  version = "0.0.3"
+
+[[constraint]]
   name = "github.com/jackc/pgx"
   version = "3.1.0"
 

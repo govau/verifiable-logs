@@ -6,6 +6,7 @@ docker run -p 5435:5432 --name verifiable -e POSTGRES_USER=verifiable -e POSTGRE
 export VCAP_APPLICATION='{}'
 export VCAP_SERVICES='{"postgres": [{"credentials": {"username": "verifiable", "host": "localhost", "password": "verifiable", "name": "verifiable", "port": 5435}, "tags": ["postgres"]}]}'
 export PORT=8080
+export VDB_SECRET=secret
 
 go run cmd/verifiable-log/main-verifiable-log.go
 ```
@@ -20,6 +21,8 @@ Build and push:
 
 ```bash
 cfy create-service postgres shared govauverifiabledemo
+cfy create-user-provided-service govauverifiabledemo-ups -p '{"VDB_SECRET":"secret"}'
+
 
 # Build and push
 dep ensure
