@@ -12,7 +12,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/bgentry/que-go"
+	"github.com/benlaurie/objecthash/go/objecthash"
+
 	"github.com/govau/verifiable-log/pb"
 	"github.com/jackc/pgx"
 )
@@ -40,30 +41,23 @@ VERIFIABLE_LOG_API_KEY=xxx
 
 Prep in CKAN:
 
-
-
-# FR = {"resource":{"package_id":"xxx"},
-
-D="$(cat <<EOF | jq -c .
-{
-  "resource_id": "xxx",
-  "fields": [
-    ...
-    {
-      "id": "signed_certificate_timestamp",
-      "type": "text"
-    }
-  ],
-  "primary_key": "key",
-  "triggers": [{
-    "function": "append_to_verifiable_log"
-  }]
-}
+docker exec -i db psql -U ckan datastore <<EOF
+CREATE TABLE IF NOT EXISTS que_jobs (
+	priority    smallint    NOT NULL DEFAULT 100,
+	run_at      timestamptz NOT NULL DEFAULT now(),
+	job_id      bigserial   NOT NULL,
+	job_class   text        NOT NULL,
+	args        json        NOT NULL DEFAULT '[]'::json,
+	error_count integer     NOT NULL DEFAULT 0,
+	last_error  text,
+	queue       text        NOT NULL DEFAULT '',
+	CONSTRAINT que_jobs_pkey PRIMARY KEY (queue, priority, run_at, job_id)
+);
 EOF
-)"
 
-curl -H "Content-Type: application/json" -d "$D" -H "Authorization: xxx"  http://localhost:5000/api/3/action/datastore_create
 
+
+CKAN_KEY=xxx
 
 F="
 BEGIN
@@ -85,21 +79,57 @@ D="$(cat <<EOF | jq -c .
 }
 EOF
 )"
+curl -H "Content-Type: application/json" -d "$D" -H "Authorization: ${CKAN_KEY}"  http://localhost:5000/api/3/action/datastore_function_create | jq .
 
+# First time, add: "resource": {"package_id": "xxx"},
+# 2nd and subsequent instead use: "resource_id": "xxx",
+D="$(cat <<EOF | jq -c .
+{
+  ...
+  "fields": [
+    {
+      "id": "signed_certificate_timestamp",
+      "type": "text"
+	},
+    {
+      "id": "foo",
+      "type": "text"
+    },
+    {
+      "id": "bar",
+      "type": "text"
+    }
+  ],
+  "primary_key": "foo",
+  "triggers": [{
+    "function": "append_to_verifiable_log"
+  }]
+}
+EOF
+)"
 
-curl -H "Content-Type: application/json" -d "$D" -H "Authorization: xxx"  http://localhost:5000/api/3/action/datastore_function_create
+curl -H "Content-Type: application/json" -d "$D" -H "Authorization: ${CKAN_KEY}"  http://localhost:5000/api/3/action/datastore_create | jq .
 
-CREATE TABLE IF NOT EXISTS que_jobs (
-	priority    smallint    NOT NULL DEFAULT 100,
-	run_at      timestamptz NOT NULL DEFAULT now(),
-	job_id      bigserial   NOT NULL,
-	job_class   text        NOT NULL,
-	args        json        NOT NULL DEFAULT '[]'::json,
-	error_count integer     NOT NULL DEFAULT 0,
-	last_error  text,
-	queue       text        NOT NULL DEFAULT '',
-	CONSTRAINT que_jobs_pkey PRIMARY KEY (queue, priority, run_at, job_id)
-);
+CKAN_RESOURCE=xxx
+
+D="$(cat <<EOF | jq -c .
+{
+  "method": "upsert",
+  "resource_id": "1aadfa79-bf6d-4812-b254-b6df73e92aef",
+  "records": [
+    {
+      "foo": "1",
+      "bar": "2"
+	},
+    {
+      "foo": "3",
+      "bar": "4"
+	}
+  ]
+}
+EOF
+)"
+curl -H "Content-Type: application/json" -d "$D" -H "Authorization: ${CKAN_KEY}"  http://localhost:5000/api/3/action/datastore_upsert | jq .
 
 */
 
@@ -122,14 +152,26 @@ func (h *logAddHandler) addToVerifiableLog(job *que.Job) error {
 
 	dataToSend := make(map[string]interface{})
 	for k, v := range jd.Data {
+		// Don't count the internal fields
 		if strings.HasPrefix(k, "_") {
 			continue
 		}
+		// Don't count the SCT itself
 		if k == "signed_certificate_timestamp" {
+			continue
+		}
+		// Ignore null values so that columns can be added over time
+		if v == nil {
 			continue
 		}
 		dataToSend[k] = v
 	}
+
+	oh, err := objecthash.ObjectHash(dataToSend)
+	if err != nil {
+		return err
+	}
+
 	bb, err := json.Marshal(dataToSend)
 	if err != nil {
 		return err
