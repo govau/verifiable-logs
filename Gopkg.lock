@@ -2,6 +2,13 @@
 
 
 [[projects]]
+  branch = "fixshutdown"
+  name = "github.com/bgentry/que-go"
+  packages = ["."]
+  revision = "decd7cabcfb7e5ae1a547cf0257b2fc63e634331"
+  source = "github.com/govau/que-go"
+
+[[projects]]
   name = "github.com/cloudfoundry-community/go-cfenv"
   packages = ["."]
   revision = "f920e9562d5f951cbf11785728f67258c38a10d0"
@@ -30,10 +37,12 @@
 [[projects]]
   name = "github.com/golang/protobuf"
   packages = [
+    "jsonpb",
     "proto",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
+    "ptypes/struct",
     "ptypes/timestamp"
   ]
   revision = "925541529c1fa6821df4e44ce2723319eb2be768"
@@ -87,6 +96,16 @@
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
+
+[[projects]]
+  name = "github.com/twitchtv/twirp"
+  packages = [
+    ".",
+    "ctxsetters",
+    "internal/contextkeys"
+  ]
+  revision = "1e149ba374383a4b74e836f6c9e54fede6b09c61"
+  version = "v5.3.0"
 
 [[projects]]
   branch = "master"
@@ -162,6 +181,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0e97d3b98734af8ba3db4324534623d965d6e8d1eadaa28ddacaa6a8410e00b2"
+  inputs-digest = "fab85771c22e09c20fe97a7874cf205a0f1d566bbc28b2534900ad30ceec927e"
   solver-name = "gps-cdcl"
   solver-version = 1
