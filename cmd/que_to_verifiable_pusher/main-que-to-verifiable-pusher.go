@@ -24,6 +24,8 @@ import (
 	"github.com/google/certificate-transparency-go/tls"
 	uuid "github.com/satori/go.uuid"
 
+	"github.com/govau/verifiable-log"
+
 	"github.com/jackc/pgx"
 )
 
@@ -175,14 +177,11 @@ func (h *logAddHandler) getLogClient(canonTable string) (*client.LogClient, erro
 		return rv, nil
 	}
 
-	der, err := h.getPublicKeyDER(canonTable)
-	if err != nil {
-		return nil, err
-	}
-
-	rv, err = client.New(h.baseURLForLog(canonTable), http.DefaultClient, jsonclient.Options{
-		PublicKeyDER: der,
-	})
+	// NOTE that the log client we get does NOT do verification.
+	// This is deliberate, as may otherwise have a bootstrap problem whereby we
+	// don't create a log until the first item is added to it, and thus do not have
+	// a public key.
+	rv, err := client.New(h.baseURLForLog(canonTable), http.DefaultClient, jsonclient.Options{})
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +274,7 @@ func (h *logAddHandler) getPublicKeyDER(canonTable string) ([]byte, error) {
 		return nil, errors.New("bad http status code fetching log metadata")
 	}
 
-	var md MetadataResponse
+	var md verifiablelog.MetadataResponse
 	err = json.NewDecoder(resp.Body).Decode(&md)
 	if err != nil {
 		return nil, err
@@ -283,11 +282,6 @@ func (h *logAddHandler) getPublicKeyDER(canonTable string) ([]byte, error) {
 
 	h.publicKeyDERs[canonTable] = md.Key
 	return md.Key, nil
-}
-
-// MetadataResponse is a subset of a log as defined at: https://www.gstatic.com/ct/log_list/log_list_schema.json
-type MetadataResponse struct {
-	Key []byte `json:"key"`
 }
 
 // table name must already be canonical

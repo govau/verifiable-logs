@@ -35,7 +35,6 @@
     "mutator/instant",
     "oracle/policy",
     "pb",
-    "server/httprest",
     "verifiable"
   ]
   revision = "b74225c6dbd0022bf6e1281f7c01d8ccd6a20b18"
@@ -73,12 +72,6 @@
   packages = ["."]
   revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
   version = "v1.1"
-
-[[projects]]
-  name = "github.com/gorilla/handlers"
-  packages = ["."]
-  revision = "90663712d74cb411cbef281bc1e08c19d1a76145"
-  version = "v1.3.0"
 
 [[projects]]
   name = "github.com/gorilla/mux"
@@ -207,6 +200,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ccaf0284b312c0235dc19cce75612cc09ee43d93022bf0152b3cc8e7eb86dd84"
+  inputs-digest = "9c82dc6e9d51ff800fa46be79c5f5538eba24ef0e60d2ed68020555d8e29cc9d"
   solver-name = "gps-cdcl"
   solver-version = 1
