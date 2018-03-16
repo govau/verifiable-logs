@@ -8,6 +8,11 @@
   branch = "fixshutdown"
 
 [[constraint]]
+  name = "github.com/google/certificate-transparency-go"
+  source = "github.com/govau/certificate-transparency-go"
+  branch = "objecthash"
+
+[[constraint]]
   branch = "master"
   name = "github.com/continusec/verifiabledatastructures"
 

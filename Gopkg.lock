@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/benlaurie/objecthash"
+  packages = ["go/objecthash"]
+  revision = "d1e3d6079fc16f8f542183fb5b2fdc11d9f00866"
+
+[[projects]]
   branch = "fixshutdown"
   name = "github.com/bgentry/que-go"
   packages = ["."]
@@ -37,16 +43,30 @@
 [[projects]]
   name = "github.com/golang/protobuf"
   packages = [
-    "jsonpb",
     "proto",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
-    "ptypes/struct",
     "ptypes/timestamp"
   ]
   revision = "925541529c1fa6821df4e44ce2723319eb2be768"
   version = "v1.0.0"
+
+[[projects]]
+  branch = "objecthash"
+  name = "github.com/google/certificate-transparency-go"
+  packages = [
+    ".",
+    "asn1",
+    "client",
+    "client/configpb",
+    "jsonclient",
+    "tls",
+    "x509",
+    "x509/pkix"
+  ]
+  revision = "190ca0ff3839a0ee003466810da3ec7279898040"
+  source = "github.com/govau/certificate-transparency-go"
 
 [[projects]]
   name = "github.com/gorilla/context"
@@ -98,20 +118,26 @@
   version = "v0.8.0"
 
 [[projects]]
-  name = "github.com/twitchtv/twirp"
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
+  version = "v1.2.0"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
   packages = [
-    ".",
-    "ctxsetters",
-    "internal/contextkeys"
+    "cryptobyte",
+    "cryptobyte/asn1"
   ]
-  revision = "1e149ba374383a4b74e836f6c9e54fede6b09c61"
-  version = "v5.3.0"
+  revision = "b4956d363a8b14623cc81db401707679605930a3"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = [
     "context",
+    "context/ctxhttp",
     "http2",
     "http2/hpack",
     "idna",
@@ -181,6 +207,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fab85771c22e09c20fe97a7874cf205a0f1d566bbc28b2534900ad30ceec927e"
+  inputs-digest = "ccaf0284b312c0235dc19cce75612cc09ee43d93022bf0152b3cc8e7eb86dd84"
   solver-name = "gps-cdcl"
   solver-version = 1
