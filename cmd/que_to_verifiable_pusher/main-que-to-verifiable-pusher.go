@@ -29,121 +29,6 @@ import (
 	"github.com/jackc/pgx"
 )
 
-/*
-Please set:
-
-PGHOST=localhost
-PGPORT=5432
-PGDATABASE=datastore
-PGUSER=ckan
-PGPASSWORD=""
-
-(and any other variables suported by libpq)
-
-# Number of worker threads against database to use, we will open 2x that connection pool objects
-QUE_WORKERS=5
-
-# Server to submit data to
-VERIFIABLE_LOG_SERVER=xxx
-
-# API key for server
-VERIFIABLE_LOG_API_KEY=xxx
-
-
-Prep in CKAN:
-
-docker exec -i db psql -U ckan datastore <<EOF
-CREATE TABLE IF NOT EXISTS que_jobs (
-	priority    smallint    NOT NULL DEFAULT 100,
-	run_at      timestamptz NOT NULL DEFAULT now(),
-	job_id      bigserial   NOT NULL,
-	job_class   text        NOT NULL,
-	args        json        NOT NULL DEFAULT '[]'::json,
-	error_count integer     NOT NULL DEFAULT 0,
-	last_error  text,
-	queue       text        NOT NULL DEFAULT '',
-	CONSTRAINT que_jobs_pkey PRIMARY KEY (queue, priority, run_at, job_id)
-);
-EOF
-
-
-
-CKAN_KEY=xxx
-
-F="
-BEGIN
-    INSERT INTO que_jobs (job_class, args)
-    VALUES ('update_sct', json_build_object(
-        'table', TG_TABLE_NAME,
-        'data', NEW
-    ));
-    RETURN NEW;
-END;
-"
-G=$(echo $F | tr "\n" " ")
-D="$(cat <<EOF | jq -c .
-{
-    "name": "append_to_verifiable_log",
-    "or_replace": "true",
-    "rettype": "trigger",
-    "definition": "${G}"
-}
-EOF
-)"
-curl -H "Content-Type: application/json" -d "$D" -H "Authorization: ${CKAN_KEY}"  http://localhost:5000/api/3/action/datastore_function_create | jq .
-
-# First time, add: "resource": {"package_id": "xxx"},
-# 2nd and subsequent instead use: "resource_id": "xxx",
-D="$(cat <<EOF | jq -c .
-{
-  ...
-  "fields": [
-    {
-      "id": "signed_certificate_timestamp",
-      "type": "text"
-	},
-    {
-      "id": "foo",
-      "type": "text"
-    },
-    {
-      "id": "bar",
-      "type": "text"
-    }
-  ],
-  "primary_key": "foo",
-  "triggers": [{
-    "function": "append_to_verifiable_log"
-  }]
-}
-EOF
-)"
-
-curl -H "Content-Type: application/json" -d "$D" -H "Authorization: ${CKAN_KEY}"  http://localhost:5000/api/3/action/datastore_create | jq .
-
-CKAN_RESOURCE=xxx
-
-D="$(cat <<EOF | jq -c .
-{
-  "method": "upsert",
-  "resource_id": "1aadfa79-bf6d-4812-b254-b6df73e92aef",
-  "records": [
-    {
-      "foo": "1",
-      "bar": "2"
-	},
-    {
-      "foo": "3",
-      "bar": "4"
-	}
-  ]
-}
-EOF
-)"
-curl -H "Content-Type: application/json" -d "$D" -H "Authorization: ${CKAN_KEY}"  http://localhost:5000/api/3/action/datastore_upsert | jq .
-
-*/
-
 type logAddHandler struct {
 	Server string
 	APIKey string
@@ -330,9 +215,13 @@ func (h *logAddHandler) addToVerifiableLog(job *que.Job) error {
 	}
 	canonTable := u.String()
 
-	id, ok := jd.Data["_id"].(int)
+	idAsFloat, ok := jd.Data["_id"].(float64)
 	if !ok {
 		return errors.New("no _id found for object")
+	}
+	id := int(idAsFloat)
+	if (idAsFloat - float64(id)) != 0.0 {
+		return errors.New("json (which cannot represent an integer) has defeated us")
 	}
 
 	dataToSend := make(map[string]interface{})
@@ -361,6 +250,7 @@ func (h *logAddHandler) addToVerifiableLog(job *que.Job) error {
 	if currentSCT != "" {
 		err = h.verifyIt(canonTable, currentSCT, oh[:])
 		if err != nil {
+			log.Println("error validating sct", err)
 			return err
 		}
 
@@ -375,11 +265,13 @@ func (h *logAddHandler) addToVerifiableLog(job *que.Job) error {
 
 	sct, err := logClient.AddObjectHash(context.Background(), oh[:], dataToSend)
 	if err != nil {
+		log.Println("error adding to log", err)
 		return err
 	}
 
 	tlsEncode, err := tls.Marshal(sct)
 	if err != nil {
+		log.Println("error encoding to save", err)
 		return err
 	}
 

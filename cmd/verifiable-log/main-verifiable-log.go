@@ -659,6 +659,6 @@ func main() {
 		WriteAPIKey:    "write",
 		Reader:         db,
 		Writer:         db,
-		ExternalAddKey: envLookup.MustString("VDB_ADD_SECRET"),
+		ExternalAddKey: envLookup.MustString("VDB_SECRET"),
 	}).CreateRESTHandler()))
 }
