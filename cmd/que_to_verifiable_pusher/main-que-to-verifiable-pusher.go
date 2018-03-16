@@ -22,9 +22,8 @@ import (
 	"github.com/google/certificate-transparency-go/client"
 	"github.com/google/certificate-transparency-go/jsonclient"
 	"github.com/google/certificate-transparency-go/tls"
+	verifiablelog "github.com/govau/verifiable-logs"
 	uuid "github.com/satori/go.uuid"
-
-	"github.com/govau/verifiable-log"
 
 	"github.com/jackc/pgx"
 )

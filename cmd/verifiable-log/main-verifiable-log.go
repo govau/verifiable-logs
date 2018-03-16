@@ -20,7 +20,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/govau/verifiable-log"
+	"github.com/govau/verifiable-logs"
 
 	"github.com/gorilla/mux"
 	uuid "github.com/satori/go.uuid"
@@ -36,9 +36,9 @@ import (
 	"github.com/continusec/verifiabledatastructures/oracle/policy"
 	"github.com/continusec/verifiabledatastructures/verifiable"
 	"github.com/govau/cf-common/env"
-	"github.com/govau/verifiable-log/db"
-	govpb "github.com/govau/verifiable-log/pb"
-	"github.com/govau/verifiable-log/postgres"
+	"github.com/govau/verifiable-logs/db"
+	govpb "github.com/govau/verifiable-logs/pb"
+	"github.com/govau/verifiable-logs/postgres"
 )
 
 const (
@@ -197,7 +197,7 @@ func (cts *ctServer) handleMetadata(vlog *verifiable.Log, r *http.Request) (inte
 	if err != nil {
 		return nil, err
 	}
-	return &verifiablelog.MetadataResponse{
+	return &verifiablelogs.MetadataResponse{
 		Key: sk.PublicDER,
 	}, nil
 }
