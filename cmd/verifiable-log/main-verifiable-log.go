@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
@@ -87,7 +88,34 @@ func makeKeyForLog(log *pb.LogRef) ([]byte, error) {
 	return h[:], nil
 }
 
-func (cts *ctServer) getSigningKey(vlog *verifiable.Log, r *http.Request) (*signingKey, error) {
+func (cts *ctServer) cacheSigningKey(logKeyString string, logMetadata *govpb.LogMetadata) (*signingKey, error) {
+	pkey, err := x509.ParseECPrivateKey(logMetadata.PrivateKeyDer)
+	if err != nil {
+		return nil, verifiable.ErrInternalError // swallow real error please
+	}
+
+	pubKey, err := x509.MarshalPKIXPublicKey(&pkey.PublicKey)
+	if err != nil {
+		return nil, verifiable.ErrInternalError // swallow real error please
+	}
+
+	rv := &signingKey{
+		PrivateKey: pkey,
+		PublicDER:  pubKey,
+		LogID:      sha256.Sum256(pubKey),
+	}
+
+	cts.knownLogMutex.Lock()
+	if cts.knownLogs == nil {
+		cts.knownLogs = make(map[string]*signingKey)
+	}
+	cts.knownLogs[logKeyString] = rv
+	cts.knownLogMutex.Unlock()
+
+	return rv, nil
+}
+
+func (cts *ctServer) getSigningKey(vlog *verifiable.Log, r *http.Request, create bool) (*signingKey, error) {
 	logKey, err := makeKeyForLog(vlog.Log)
 	if err != nil {
 		return nil, err
@@ -118,38 +146,54 @@ func (cts *ctServer) getSigningKey(vlog *verifiable.Log, r *http.Request) (*sign
 	err = cts.Reader.ExecuteReadOnly(r.Context(), ns[:], func(ctx context.Context, kr verifiable.KeyReader) error {
 		return kr.Get(ctx, logKey, &logMetadata)
 	})
+	switch err {
+	case nil:
+		return cts.cacheSigningKey(logKeyString, &logMetadata)
+	case verifiable.ErrNoSuchKey:
+		if !create {
+			return nil, err
+		}
+		// else, continue, we'll create
+	default:
+		return nil, err
+	}
+
+	// Ok, time to create one
+	pkey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, verifiable.ErrInternalError // swallow crypto errs
+	}
+
+	der, err := x509.MarshalECPrivateKey(pkey)
+	if err != nil {
+		return nil, verifiable.ErrInternalError // swallow crypto errs
+	}
+
+	err = cts.Writer.ExecuteUpdate(r.Context(), ns[:], func(ctx context.Context, kw verifiable.KeyWriter) error {
+		// Check to see if anyone else has created one
+		err := kw.Get(ctx, logKey, &logMetadata)
+		switch err {
+		case nil:
+			// Exit early, we'll use this one instead
+			return nil
+		case verifiable.ErrNoSuchKey:
+			// continue, we will create
+		default:
+			return err
+		}
+
+		logMetadata.PrivateKeyDer = der
+		return kw.Set(ctx, logKey, &logMetadata)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	pkey, err := x509.ParseECPrivateKey(logMetadata.PrivateKeyDer)
-	if err != nil {
-		return nil, verifiable.ErrInternalError // swallow real error please
-	}
-
-	pubKey, err := x509.MarshalPKIXPublicKey(&pkey.PublicKey)
-	if err != nil {
-		return nil, verifiable.ErrInternalError // swallow real error please
-	}
-
-	rv = &signingKey{
-		PrivateKey: pkey,
-		PublicDER:  pubKey,
-		LogID:      sha256.Sum256(pubKey),
-	}
-
-	cts.knownLogMutex.Lock()
-	if cts.knownLogs == nil {
-		cts.knownLogs = make(map[string]*signingKey)
-	}
-	cts.knownLogs[logKeyString] = rv
-	cts.knownLogMutex.Unlock()
-
-	return rv, nil
+	return cts.cacheSigningKey(logKeyString, &logMetadata)
 }
 
 func (cts *ctServer) handleMetadata(vlog *verifiable.Log, r *http.Request) (interface{}, error) {
-	sk, err := cts.getSigningKey(vlog, r)
+	sk, err := cts.getSigningKey(vlog, r, false)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +234,7 @@ func (cts *ctServer) handleAdd(vlog *verifiable.Log, r *http.Request) (interface
 	switch err {
 	case nil:
 		// Get log ID and we're done
-		sk, err := cts.getSigningKey(vlog, r)
+		sk, err := cts.getSigningKey(vlog, r, false)
 		if err != nil {
 			return nil, err
 		}
@@ -230,7 +274,7 @@ func (cts *ctServer) handleAdd(vlog *verifiable.Log, r *http.Request) (interface
 	}
 
 	// Grab the signing key
-	sk, err := cts.getSigningKey(vlog, r)
+	sk, err := cts.getSigningKey(vlog, r, true)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +361,7 @@ func (cts *ctServer) handleSTH(vlog *verifiable.Log, r *http.Request) (interface
 		return nil, err
 	}
 
-	sk, err := cts.getSigningKey(vlog, r)
+	sk, err := cts.getSigningKey(vlog, r, false)
 	if err != nil {
 		return nil, err
 	}
@@ -373,7 +417,7 @@ func (cts *ctServer) wrapCall(apiKey string, ensureExists bool, f func(log *veri
 		vlog := cts.Service.Account(cts.Account, apiKey).VerifiableLog(u.String())
 		if ensureExists {
 			// This is to make sure we don't spuriously create way too many tables in postgresql for logs that don't exists
-			_, err = cts.getSigningKey(vlog, r)
+			_, err = cts.getSigningKey(vlog, r, false)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusNotFound)
 			}
