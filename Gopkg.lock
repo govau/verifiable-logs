@@ -64,7 +64,7 @@
     "x509",
     "x509/pkix"
   ]
-  revision = "190ca0ff3839a0ee003466810da3ec7279898040"
+  revision = "84ffa14380c50f997ade57d998c174b3894c6e2a"
   source = "github.com/govau/certificate-transparency-go"
 
 [[projects]]
@@ -138,7 +138,7 @@
     "lex/httplex",
     "trace"
   ]
-  revision = "22ae77b79946ea320088417e4d50825671d82d57"
+  revision = "e0c57d8f86c17f0724497efcb3bc617e82834821"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -165,7 +165,7 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
-  revision = "2c5e7ac708aaa719366570dd82bda44541ca2a63"
+  revision = "f8c8703595236ae70fdf8789ecb656ea0bcdcf46"
 
 [[projects]]
   name = "google.golang.org/grpc"

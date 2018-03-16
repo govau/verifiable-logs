@@ -260,7 +260,7 @@ func (cts *ctServer) handleAdd(vlog *verifiable.Log, r *http.Request) (interface
 
 	ts := time.Now().UnixNano() / (1000 * 1000)
 	mtl := ct.CreateObjectHashMerkleTreeLeaf(ohr.Hash, uint64(ts))
-	mtlBytes, err := tls.Marshal(mtl)
+	mtlBytes, err := tls.Marshal(*mtl)
 	if err != nil {
 		return nil, err
 	}
@@ -290,14 +290,19 @@ func (cts *ctServer) handleAdd(vlog *verifiable.Log, r *http.Request) (interface
 	if err != nil {
 		return nil, err
 	}
-	digest := sha256.Sum256(tbs)
-	sig, err := sk.PrivateKey.Sign(rand.Reader, digest[:], nil)
+
+	dss, err := tls.CreateSignature(*sk.PrivateKey, tls.SHA256, tbs)
 	if err != nil {
 		return nil, verifiable.ErrInternalError // swallow crypto errs
 	}
 
+	sigBytes, err := tls.Marshal(dss)
+	if err != nil {
+		return nil, err
+	}
+
 	sct = govpb.AddResponse{
-		Signature: sig,
+		Signature: sigBytes,
 		Timestamp: ts,
 	}
 
@@ -378,15 +383,21 @@ func (cts *ctServer) handleSTH(vlog *verifiable.Log, r *http.Request) (interface
 	if err != nil {
 		return nil, err
 	}
-	digest := sha256.Sum256(tbs)
-	sig, err := sk.PrivateKey.Sign(rand.Reader, digest[:], nil)
+
+	dss, err := tls.CreateSignature(*sk.PrivateKey, tls.SHA256, tbs)
 	if err != nil {
 		return nil, verifiable.ErrInternalError // swallow crypto errs
 	}
+
+	sigBytes, err := tls.Marshal(dss)
+	if err != nil {
+		return nil, err
+	}
+
 	sth = govpb.SignedTreeHead{
 		Sha256RootHash:    root.RootHash,
 		Timestamp:         int64(ctSTH.Timestamp),
-		TreeHeadSignature: sig,
+		TreeHeadSignature: sigBytes,
 		TreeSize:          root.TreeSize,
 	}
 
@@ -409,6 +420,7 @@ func (cts *ctServer) handleSTH(vlog *verifiable.Log, r *http.Request) (interface
 
 func (cts *ctServer) wrapCall(apiKey string, ensureExists bool, f func(log *verifiable.Log, r *http.Request) (interface{}, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Println(r.URL.String())
 		u, err := uuid.FromString(mux.Vars(r)["uuid"])
 		if err != nil {
 			http.Error(w, "bad dataset id", http.StatusBadRequest)
@@ -420,6 +432,7 @@ func (cts *ctServer) wrapCall(apiKey string, ensureExists bool, f func(log *veri
 			_, err = cts.getSigningKey(vlog, r, false)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusNotFound)
+				return
 			}
 		}
 		obj, err := f(vlog, r)
@@ -506,6 +519,9 @@ func (cts *ctServer) handleGetEntries(vlog *verifiable.Log, r *http.Request) (in
 			ExtraData: entry.ExtraData,
 		})
 	}
+	if len(rv.Entries) == 0 { // typically if the size were sent in wrong
+		return nil, verifiable.ErrInvalidRange
+	}
 
 	return rv, nil
 }
@@ -546,7 +562,7 @@ func (cts *ctServer) CreateRESTHandler() http.Handler {
 	r := mux.NewRouter()
 
 	cts.addCallToRouter(r, "/metadata", cts.ReadAPIKey, true, cts.handleMetadata)
-	cts.addCallToRouter(r, "/add-object-hash", cts.WriteAPIKey, false, cts.handleAdd)
+	cts.addCallToRouter(r, "/add-objecthash", cts.WriteAPIKey, false, cts.handleAdd)
 	cts.addCallToRouter(r, "/get-sth", cts.ReadAPIKey, true, cts.handleSTH)
 	cts.addCallToRouter(r, "/get-sth-consistency", cts.ReadAPIKey, true, cts.handleSTHConsistency)
 	cts.addCallToRouter(r, "/get-proof-by-hash", cts.ReadAPIKey, true, cts.handleProofByHash)
@@ -655,6 +671,7 @@ func main() {
 		Service: &verifiable.Client{
 			Service: server,
 		},
+		Account:        "data.gov.au",
 		ReadAPIKey:     "read",
 		WriteAPIKey:    "write",
 		Reader:         db,

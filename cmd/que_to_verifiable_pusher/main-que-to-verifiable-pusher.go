@@ -42,6 +42,15 @@ type logAddHandler struct {
 	publicKeyDERs  map[string][]byte
 }
 
+type authRT struct {
+	APIKey string
+}
+
+func (a *authRT) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("Authorization", a.APIKey)
+	return http.DefaultTransport.RoundTrip(req)
+}
+
 // Table name must already be canonical
 func (h *logAddHandler) baseURLForLog(canonTable string) string {
 	return fmt.Sprintf("%s/dataset/%s", h.Server, canonTable)
@@ -65,7 +74,11 @@ func (h *logAddHandler) getLogClient(canonTable string) (*client.LogClient, erro
 	// This is deliberate, as may otherwise have a bootstrap problem whereby we
 	// don't create a log until the first item is added to it, and thus do not have
 	// a public key.
-	rv, err := client.New(h.baseURLForLog(canonTable), http.DefaultClient, jsonclient.Options{})
+	rv, err := client.New(h.baseURLForLog(canonTable), &http.Client{
+		Transport: &authRT{
+			APIKey: h.APIKey,
+		},
+	}, jsonclient.Options{})
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +161,7 @@ func (h *logAddHandler) getPublicKeyDER(canonTable string) ([]byte, error) {
 		return rv, nil
 	}
 
-	resp, err := http.Get(h.baseURLForLog(canonTable) + "/metadata")
+	resp, err := http.Get(h.baseURLForLog(canonTable) + "/ct/v1/metadata")
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +262,6 @@ func (h *logAddHandler) addToVerifiableLog(job *que.Job) error {
 	if currentSCT != "" {
 		err = h.verifyIt(canonTable, currentSCT, oh[:])
 		if err != nil {
-			log.Println("error validating sct", err)
 			return err
 		}
 
@@ -264,13 +276,11 @@ func (h *logAddHandler) addToVerifiableLog(job *que.Job) error {
 
 	sct, err := logClient.AddObjectHash(context.Background(), oh[:], dataToSend)
 	if err != nil {
-		log.Println("error adding to log", err)
 		return err
 	}
 
-	tlsEncode, err := tls.Marshal(sct)
+	tlsEncode, err := tls.Marshal(*sct)
 	if err != nil {
-		log.Println("error encoding to save", err)
 		return err
 	}
 
