@@ -259,12 +259,7 @@ func (h *logAddHandler) addToVerifiableLog(job *que.Job) error {
 	}
 
 	currentSCT, _ := jd.Data["signed_certificate_timestamp"].(string)
-	if currentSCT != "" {
-		err = h.verifyIt(canonTable, currentSCT, oh[:])
-		if err != nil {
-			return err
-		}
-
+	if currentSCT != "" && h.verifyIt(canonTable, currentSCT, oh[:]) == nil {
 		// If we already have a valid one, stop now
 		return nil
 	}
@@ -284,13 +279,80 @@ func (h *logAddHandler) addToVerifiableLog(job *que.Job) error {
 		return err
 	}
 
-	_, err = job.Conn().Exec(fmt.Sprintf(`UPDATE "%s" SET signed_certificate_timestamp = $1 WHERE _id = $2`, jd.Table), base64.StdEncoding.EncodeToString(tlsEncode), id)
+	tx, err := job.Conn().Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.Query(fmt.Sprintf(`SELECT * FROM "%s" WHERE _id = $1 FOR UPDATE`, canonTable), id)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	doUpdate := false
+	count := 0
+	for rows.Next() {
+		curDataForHash := make(map[string]interface{})
+
+		vals, err := rows.Values()
+		if err != nil {
+			return err
+		}
+
+		for i, field := range rows.FieldDescriptions() {
+			// Don't count the internal fields
+			if strings.HasPrefix(field.Name, "_") {
+				continue
+			}
+			// Don't count the SCT itself
+			if field.Name == "signed_certificate_timestamp" {
+				continue
+			}
+			// Ignore null values so that columns can be added over time, without affecting the signature
+			if vals[i] == nil {
+				continue
+			}
+
+			curDataForHash[field.Name] = vals[i]
+		}
+
+		newObjHash, err := objecthash.ObjectHash(curDataForHash)
+		if err != nil {
+			return err
+		}
+		if newObjHash == oh {
+			doUpdate = true
+		}
+
+		count++
+	}
+
+	switch count {
+	case 0:
+		// must have been deleted since
+		return nil
+	case 1:
+		// continue
+	default:
+		return errors.New("multiple records found with same _id")
+	}
+	if count == 0 {
+		return nil
+	}
+
+	if !doUpdate {
+		// must have changed since
+		return nil
+	}
+
+	_, err = tx.Exec(fmt.Sprintf(`UPDATE "%s" SET signed_certificate_timestamp = $1 WHERE _id = $2`, canonTable), base64.StdEncoding.EncodeToString(tlsEncode), id)
 	if err != nil {
 		return err
 	}
 
-	// We're done
-	return nil
+	return tx.Commit()
 }
 
 func main() {
