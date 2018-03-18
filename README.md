@@ -1,165 +1,26 @@
-# Running locally
+# Verifiable Data Structures
 
-## Start the Verifiable Log Server
+This repository contains a number of tools that are designed to make it easy to experiment with the use of Verifiable Data Structures to apply to datasets made available by government agencies.
 
-```bash
+While the first wave of open data facilitated by initiatives such as [data.gov.au](https://data.gov.au) has been eagerly adopted by many interested parties, we believe that it is important to take advantage of a new wave of cryptographic application to be be able to publish datasets that are not only open, but are also able to prove properties about their own correctness (such as append-only, no tampering).
 
-# No need to initialize the database
-docker run -p 5435:5432 --name verifiable -e POSTGRES_USER=verifiable -e POSTGRES_PASSWORD=verifiable -d postgres
+## Technical background and approaches
 
-export VCAP_APPLICATION='{}'
-export VCAP_SERVICES='{"postgres": [{"credentials": {"username": "verifiable", "host": "localhost", "password": "verifiable", "name": "verifiable", "port": 5435}, "tags": ["postgres"]}]}'
-export PORT=8080
-export VDB_SECRET=secret
+In the late 1970s Ralph Merkle coined the term [Merkle Trees](https://en.wikipedia.org/wiki/Merkle_tree), an mechanism by which the integrity of large amounts of data could be verified and reasonabed about in an efficient manner, and the principles behind Merkle Trees have found their way into modern systems, being used in source control systems such as [Git](https://blog.sourced.tech/post/difftree/) and [Subversion](https://paulhammant.com/2017/09/17/old-school-merkle-trees-rock/), but perhaps are most well popularzied in recent times for underpinning [Blockchain](https://www.blockchain-council.org/blockchain/what-is-merkel-tree-merkel-root-in-blockchain/), the ledger behind the decentralized crypto-currency, Bitcoin.
 
-go run cmd/verifiable-log/main-verifiable-log.go
-```
+Merkle Trees are also used to by [RFC6962](https://tools.ietf.org/html/rfc6962#section-2.1) which is a specification for publicly verifiable append-only  log of X.509 Certificates, intended to allow any interested party to verify the correct operation of the set of Certificate Authorities trusted by browsers to [underpin the security of the internet](https://www.certificate-transparency.org/).
 
-## Start a CKAN server
+While Blockchain and RFC6962 are both based on the same cryptographic primitive (Merkle Trees), the Bitcoin-style Blockchain ledger are typically decentralized, whereby no central authority vouches for the integrity of the data within, rather each node in the network votes based on the amount of compute power they have (and can prove they have by a [tremendously energy-expensive proof-of-work algorithm](https://www.theguardian.com/commentisfree/2017/nov/26/trouble-with-bitcoin-big-data-huge-energy-bill)).
 
-### Prep the `datastore` database
+## Applicability to agencies
 
-This added a new table to the `datastore` database. It is the format defined by [github.com/bgentry/que-go](https://github.com/bgentry/que-go) and used to control adding log jobs.
+We believe that a typical agency who is responsible for publishing an open dataset is already the authority for its correctness, and as such has no need to allow other unrelated parties to "vote" on which dataset is the current state of truth, and as such we don't believe that a Bitcoin-style Blockchain is appropriate for a typical dataset published by an agency.
 
-```bash
-docker exec -i db psql -U ckan datastore <<EOF
-CREATE TABLE IF NOT EXISTS que_jobs (
-    priority    smallint    NOT NULL DEFAULT 100,
-    run_at      timestamptz NOT NULL DEFAULT now(),
-    job_id      bigserial   NOT NULL,
-    job_class   text        NOT NULL,
-    args        json        NOT NULL DEFAULT '[]'::json,
-    error_count integer     NOT NULL DEFAULT 0,
-    last_error  text,
-    queue       text        NOT NULL DEFAULT '',
-    CONSTRAINT que_jobs_pkey PRIMARY KEY (queue, priority, run_at, job_id)
-);
-EOF
-```
+For example, imagine land registry data that records who owns which piece of lang - should a party with deep pockets be able to affect the accepted state of a who owns which land simply by buying more compute power?
 
-### Create a global trigger function
-
-This is to be done as a CKAN administrator:
-
-```bash
-CKAN_KEY=xxx
-
-F="
-BEGIN
-    INSERT INTO que_jobs (job_class, args)
-    VALUES ('update_sct', json_build_object(
-        'table', TG_TABLE_NAME,
-        'data', NEW
-    ));
-    RETURN NEW;
-END;
-"
-G=$(echo $F | tr "\n" " ")
-D="$(cat <<EOF | jq -c .
-{
-    "name": "append_to_verifiable_log",
-    "or_replace": "true",
-    "rettype": "trigger",
-    "definition": "${G}"
-}
-EOF
-)"
-curl -H "Content-Type: application/json" -d "$D" -H "Authorization: ${CKAN_KEY}" http://localhost:5000/api/3/action/datastore_function_create | jq .
-```
-
-### Enable this for a dataset
-
-This can be done as a normal user (table must include a `signed_certificate_timestamp` field as type `text):
-
-```bash
-# First time, add: "resource": {"package_id": "xxx"},
-# 2nd and subsequent instead use: "resource_id": "xxx",
-D="$(cat <<EOF | jq -c .
-{
-  ...
-  "fields": [
-    {
-      "id": "signed_certificate_timestamp",
-      "type": "text"
-    },
-    {
-      "id": "foo",
-      "type": "text"
-    },
-    {
-      "id": "bar",
-      "type": "text"
-    }
-  ],
-  "primary_key": "foo",
-  "triggers": [{
-    "function": "append_to_verifiable_log"
-  }]
-}
-EOF
-)"
-
-curl -H "Content-Type: application/json" -d "$D" -H "Authorization: ${CKAN_KEY}"  http://localhost:5000/api/3/action/datastore_create | jq .
-```
-
-### Insert some records to test
-
-This can be done as a normal CKAN user:
-
-```bash
-CKAN_RESOURCE=xxx
-
-D="$(cat <<EOF | jq -c .
-{
-  "method": "upsert",
-  "resource_id": "xxx",
-  "records": [
-    {
-      "foo": "1",
-      "bar": "2"
-    },
-    {
-      "foo": "3",
-      "bar": "4"
-    }
-  ]
-}
-EOF
-)"
-curl -H "Content-Type: application/json" -d "$D" -H "Authorization: ${CKAN_KEY}"  http://localhost:5000/api/3/action/datastore_upsert | jq .
-```
+We do however believe that we should experiment with making full-use of the benefits that a Blockchain ledger can provide, namely the transparency afforded by public append-only verifiable log structures that Merkle Trees can provide.
 
 
+## data.gov.au meets RFC6962
 
-## Start the que_job pusher
-
-```bash
-export QUE_WORKERS=5
-export VERIFIABLE_LOG_SERVER=http://localhost:8080
-export VERIFIABLE_LOG_API_KEY=secret
-export PGHOST=localhost
-export PGPORT=5432
-export PGDATABASE=datastore
-export PGUSER=ckan
-export PGPASSWORD=ckan
-
-go run cmd/que_to_verifiable_pusher/main-que-to-verifiable-pusher.go
-```
-
-To checkout database:
-
-```bash
-psql "dbname=verifiable host=localhost user=verifiable password=verifiable port=5435"
-```
-
-Build and push:
-
-```bash
-cfy create-service postgres shared govauverifiabledemo-db
-cfy create-user-provided-service govauverifiabledemo-ups -p '{"VDB_SECRET":"secret"}'
-
-# Build and push
-dep ensure
-GOOS=linux GOARCH=amd64 go build -o cf/verifiable-log/verifiable-log cmd/verifiable-log/main-verifiable-log.go
-cfy push -f cf/verifiable-log/manifest.yml -p cf/verifiable-log
-```
+RFC6962 describes an efficient, and widely used, log format for capturing X.509 Certificates as issued by Certificate Authorities. The specification was released in June 2013, and at this point has been used for its original purpose by over 70 logs holding over 1 billion certificate entries. Chrome, Firefox and Apple have all 

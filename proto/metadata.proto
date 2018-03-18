@@ -1,12 +1,20 @@
 syntax = "proto3";
 
+// This file is used to define data structures that are persisted to the datastore
+// by the CT log implementation.
+
 package au.gov.digital.verifiabledatastructures;
 option go_package = "pb";
 
+// LogMetadata is stored per log and contains the private key
 message LogMetadata {
+    // ASN.1 DER encoded ECDSA private key
     bytes private_key_der = 2;
 }
 
+// SignedTreeHead is persisted for each tree size that it is requested
+// for. In theory we could store only the last, however for now we'll keep all.
+// The fields here are as per https://tools.ietf.org/html/rfc6962#section-3.5
 message SignedTreeHead {
     int64 tree_size = 1;
     int64 timestamp = 2;
@@ -14,6 +22,9 @@ message SignedTreeHead {
     bytes tree_head_signature = 4;
 }
 
+// AddResponse is stored per objecthash and is so that multiple submissions
+// to the log with the same objecthash return the same SCT.
+// i.e. the fields here are as per https://tools.ietf.org/html/rfc6962#section-3.2
 message AddResponse {
     int64 timestamp = 1;
     bytes signature = 2;
