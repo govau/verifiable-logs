@@ -11,6 +11,7 @@ import (
 	"github.com/continusec/verifiabledatastructures/verifiable"
 )
 
+// CreateRESTHandler returns an http.Handler for our REST API
 func (cts *Server) CreateRESTHandler() http.Handler {
 	r := mux.NewRouter()
 

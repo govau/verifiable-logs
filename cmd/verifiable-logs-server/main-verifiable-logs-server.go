@@ -16,6 +16,7 @@ import (
 	"github.com/continusec/verifiabledatastructures/verifiable"
 	"github.com/govau/cf-common/env"
 	"github.com/govau/verifiable-logs/db"
+	"github.com/govau/verifiable-logs/generalisedtransparency"
 	"github.com/govau/verifiable-logs/postgres"
 )
 
