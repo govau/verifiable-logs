@@ -12,6 +12,8 @@ import (
 	"github.com/jackc/pgx"
 )
 
+// Storage implements a Postgresql backed storage layer, suitable for use with the
+// verifiabledatastructures library.
 type Storage struct {
 	Pool *pgx.ConnPool
 
@@ -20,14 +22,17 @@ type Storage struct {
 }
 
 type txWriter struct {
-	Tx    *pgx.Tx
+	// Tx is the transaction asssociated with this session
+	Tx *pgx.Tx
+
+	// Table is the name of the table on which we are operating
 	Table string
 }
 
-// It must return ErrNoSuchKey if none found
+// Get must return ErrNoSuchKey if none found
 func (t *txWriter) Get(ctx context.Context, key []byte, value proto.Message) error {
 	var data []byte
-	err := t.Tx.QueryRow(fmt.Sprintf(`SELECT value FROM %s WHERE key = $1`, t.Table), key).Scan(&data)
+	err := t.Tx.QueryRow(fmt.Sprintf(`SELECT value FROM "%s" WHERE key = $1`, t.Table), key).Scan(&data)
 	switch err {
 	case nil:
 		return proto.Unmarshal(data, value)
@@ -38,10 +43,10 @@ func (t *txWriter) Get(ctx context.Context, key []byte, value proto.Message) err
 	}
 }
 
-// Value of nil means delete
+// Set with value of nil means delete
 func (t *txWriter) Set(ctx context.Context, key []byte, value proto.Message) error {
 	if value == nil {
-		_, err := t.Tx.Exec(fmt.Sprintf(`DELETE FROM %s WHERE key = $1`, t.Table), key)
+		_, err := t.Tx.Exec(fmt.Sprintf(`DELETE FROM "%s" WHERE key = $1`, t.Table), key)
 		return err
 	}
 
@@ -50,11 +55,11 @@ func (t *txWriter) Set(ctx context.Context, key []byte, value proto.Message) err
 		return err
 	}
 
-	_, err = t.Tx.Exec(fmt.Sprintf(`INSERT INTO %s (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2`, t.Table), key, data)
+	_, err = t.Tx.Exec(fmt.Sprintf(`INSERT INTO "%s" (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2`, t.Table), key, data)
 	return err
 }
 
-// Returns appropriate tablename for namespace
+// returns appropriate tablename for namespace
 func (pgs *Storage) getOrCreateNS(ctx context.Context, namespace []byte) (string, error) {
 	key := string(namespace)
 
@@ -103,7 +108,8 @@ func (pgs *Storage) getOrCreateNS(ctx context.Context, namespace []byte) (string
 	return nameToUser, nil
 }
 
-// ExecuteReadOnly executes a read only query
+// ExecuteReadOnly executes a read only query. Note this will have the side-effect of
+// creating a table for this namespace, if it doesn't already exist.
 func (pgs *Storage) ExecuteReadOnly(ctx context.Context, namespace []byte, f func(ctx context.Context, db verifiable.KeyReader) error) error {
 	tableName, err := pgs.getOrCreateNS(ctx, namespace)
 	if err != nil {
@@ -122,7 +128,8 @@ func (pgs *Storage) ExecuteReadOnly(ctx context.Context, namespace []byte, f fun
 	})
 }
 
-// ExecuteUpdate executes an update query
+// ExecuteUpdate executes an update query. Only one of these can execute per-namespace
+// at once, and this is enforced by a full table lock.
 func (pgs *Storage) ExecuteUpdate(ctx context.Context, namespace []byte, f func(ctx context.Context, db verifiable.KeyWriter) error) error {
 	tableName, err := pgs.getOrCreateNS(ctx, namespace)
 	if err != nil {
@@ -136,7 +143,7 @@ func (pgs *Storage) ExecuteUpdate(ctx context.Context, namespace []byte, f func(
 	defer tx.Rollback()
 
 	// Only one update per table to run at once...
-	_, err = tx.Exec(fmt.Sprintf(`LOCK TABLE %s IN EXCLUSIVE MODE`, tableName))
+	_, err = tx.Exec(fmt.Sprintf(`LOCK TABLE "%s" IN EXCLUSIVE MODE`, tableName))
 	if err != nil {
 		return err
 	}

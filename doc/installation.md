@@ -129,8 +129,6 @@ EOF
 curl -H "Content-Type: application/json" -d "$D" -H "Authorization: ${CKAN_KEY}"  http://localhost:5000/api/3/action/datastore_upsert | jq .
 ```
 
-
-
 ## Start the que_job pusher
 
 ```bash

@@ -3,7 +3,7 @@ memory: 350M
 disk_quota: 50M
 instances: 2
 services:
-- govauverifiabledemo-db
-- govauverifiabledemo-ups
+- verifiablelogs-db
+- verifiablelogs-ups
 applications:
-- name: verifiable-log
+- name: verifiable-logs

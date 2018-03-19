@@ -1,4 +1,4 @@
-//go:generate protoc -Iproto proto/metadata.proto --go_out=pb
+//go:generate protoc -Ipb pb/metadata.proto --go_out=pb
 
 package verifiablelogs
 
