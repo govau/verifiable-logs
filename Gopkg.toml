@@ -5,12 +5,12 @@
 [[constraint]]
   name = "github.com/bgentry/que-go"
   source = "github.com/govau/que-go"
-  branch = "fixshutdown"
+  branch = "fixshutdown" # fixes shutdown by signal
 
 [[constraint]]
   name = "github.com/google/certificate-transparency-go"
   source = "github.com/govau/certificate-transparency-go"
-  branch = "objecthash"
+  branch = "objecthash" # adds objecthash support
 
 [[constraint]]
   branch = "master"

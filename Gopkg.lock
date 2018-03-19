@@ -64,7 +64,7 @@
     "x509",
     "x509/pkix"
   ]
-  revision = "84ffa14380c50f997ade57d998c174b3894c6e2a"
+  revision = "eb8447fc0aa515996cabd7c4b7ec0a3c286fcdd6"
   source = "github.com/govau/certificate-transparency-go"
 
 [[projects]]
@@ -123,7 +123,7 @@
     "cryptobyte",
     "cryptobyte/asn1"
   ]
-  revision = "b4956d363a8b14623cc81db401707679605930a3"
+  revision = "374053ea96cb300f8671b8d3b07edeeb06e203b4"
 
 [[projects]]
   branch = "master"
@@ -138,7 +138,7 @@
     "lex/httplex",
     "trace"
   ]
-  revision = "e0c57d8f86c17f0724497efcb3bc617e82834821"
+  revision = "24dd3780ca4f75fed9f321890729414a4b5d3f13"
 
 [[projects]]
   name = "golang.org/x/text"
