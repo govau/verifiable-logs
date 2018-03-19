@@ -30,7 +30,6 @@
   branch = "master"
   name = "github.com/continusec/verifiabledatastructures"
   packages = [
-    "assets",
     "merkle",
     "mutator/instant",
     "oracle/policy",
@@ -64,7 +63,7 @@
     "x509",
     "x509/pkix"
   ]
-  revision = "eb8447fc0aa515996cabd7c4b7ec0a3c286fcdd6"
+  revision = "4b4a833e11265c28691f3ab4df905b3e4469116d"
   source = "github.com/govau/certificate-transparency-go"
 
 [[projects]]
@@ -200,6 +199,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9c82dc6e9d51ff800fa46be79c5f5538eba24ef0e60d2ed68020555d8e29cc9d"
+  inputs-digest = "03b36aa3bca861ab83a6e3b90bedcb283c6f17c4d88eaff30599b26e8e568de9"
   solver-name = "gps-cdcl"
   solver-version = 1
