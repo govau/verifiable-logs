@@ -1,12 +1,26 @@
 # Database integration
 
-If you are using PostgreSQL, you can fairly easily integrate with an existing database table as follows:
+If you are using PostgreSQL, you can integrate with an existing database table as follows:
 
 ## Prep table and trigger
 
 We make use of the [github.com/bgentry/que-go](https://github.com/bgentry/que-go) library to process submitting rows to a verifiable log.
 
-Prep by creating a `que_jobs` table:
+```bash
+# If you don't already have a database...
+# then use Docker to start a local Postgresql
+docker run -p 5436:5432 --name mydb -e POSTGRES_USER=mydb -e POSTGRES_PASSWORD=mydb -d postgres
+
+# Get a `psql` prompt for next steps
+export PGHOST=localhost
+export PGPORT=5436
+export PGDATABASE=mydb
+export PGUSER=mydb
+export PGPASSWORD=mydb
+psql
+```
+
+Prep by creating a `que_jobs` table within your database:
 
 ```sql
 CREATE TABLE IF NOT EXISTS que_jobs (
@@ -39,7 +53,7 @@ $append_to_verifiable_log$ LANGUAGE plpgsql;
 
 ## Test / demonstration
 
-Now, you can do the following for any table that defines `_id` and `signed_certificate_timestamp`:
+Apply this to a table (will work for any table that defines an `_id` and `signed_certificate_timestamp`):
 
 ```sql
 CREATE TABLE IF NOT EXISTS mytable (
@@ -49,7 +63,7 @@ CREATE TABLE IF NOT EXISTS mytable (
     -- signed_certificate_timestamp must be allowed to be empty, and is populated by our tooling
     signed_certificate_timestamp  TEXT,
 
-    -- any other fields you like. Note that fields beginning with "_" are excluded from processing
+    -- any other fields you like, ie your regualr schema. Note that fields beginning with "_" are excluded from the objecthash
     foo                           TEXT,
     bar                           TIMESTAMPTZ DEFAULT NOW()
 );
@@ -87,4 +101,4 @@ SELECT * FROM que_jobs;
 
 ## Next
 
-Done, this is now ready to be run with the [`submit-rows-to-logs`](./submit-rows-to-logs.md) tool.
+Done, this is now ready to be processed with the [`submit-rows-to-logs`](./submit-rows-to-logs.md) tool.

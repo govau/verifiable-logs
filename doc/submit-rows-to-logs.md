@@ -1,13 +1,6 @@
 # Submit Rows to Logs
 
-This tool looks for jobs in the database `que_jobs` table, then submits the entries found to logs are the appropriate base URL.
-
-## Build / install
-
-```bash
-dep ensure
-go install github.com/govau/verifiable-logs/cmd/submit-rows-to-logs
-```
+This tool looks for jobs in the database `que_jobs` table, then submits the entries found to logs are the appropriate base URL, then updates the original row with the signed certificate timestamp returned.
 
 ## Run
 
@@ -28,13 +21,15 @@ export VERIFIABLE_LOG_SERVER=http://localhost:8080
 # The Authorization header to add to /add-objecthash requests
 export VERIFIABLE_LOG_API_KEY=secret
 
-# Connection info for the PostgreSQL database - all libpq env variables are supported
+# Connection info for the PostgreSQL database (that has que_jobs in it) - all libpq env variables are supported
 export PGHOST=localhost
-export PGPORT=5435
-export PGDATABASE=verifiable
-export PGUSER=verifiable
-export PGPASSWORD=verifiable
+export PGPORT=5436
+export PGDATABASE=mydb
+export PGUSER=mydb
+export PGPASSWORD=mydb
 
 # Run
 submit-rows-to-logs
 ```
+
+This should pick up the row added previously.

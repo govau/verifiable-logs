@@ -2,14 +2,12 @@
 
 When deployed this server provides an API that allows access to a an arbitrary number of independent RFC6962-style General Transparency logs. The API used to access these is described [here](./rfc6962-objecthash.md).
 
-This is designed to be deployed on CloudFoundry, backed by PostgreSQL.
+This is designed to be deployed on CloudFoundry, backed by PostgreSQL, but can also be run easily locally without CloudFoundry
 
 ## Local development
 
-Requires a Postgres database
-
 ```bash
-# No need to initialize the database
+# Use Docker to start a local Postgresql
 docker run -p 5435:5432 --name verifiable -e POSTGRES_USER=verifiable -e POSTGRES_PASSWORD=verifiable -d postgres
 
 # Pretend we are a CloudFoundry environment
@@ -18,8 +16,10 @@ export VCAP_SERVICES='{"postgres": [{"credentials": {"username": "verifiable", "
 export PORT=8080
 export VDB_SECRET=secret
 
-# Acceptable log names
+# For now, only allow a whitelist of tables to map to log names
 export VERIFIABLE_TABLENAME_VALIDATOR=whitelist
+
+# With only one entry: mytable
 export VERIFIABLE_TABLENAME_VALIDATOR_PARAM=mytable
 
 # Get dependencies
@@ -31,6 +31,10 @@ go install github.com/govau/verifiable-logs/cmd/verifiable-logs-server
 # Run it
 verifiable-logs-server
 ```
+
+## Next
+
+[Integrate with your database](./database-integration.md)
 
 ## Deployment
 

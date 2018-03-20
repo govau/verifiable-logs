@@ -1,6 +1,9 @@
 # Verifiable Data Structures
 
+[[Jump to Getting Started]](./doc/install.md)
+
 #### *Status: Experimental (March 2018)*
+
 
 This repository contains a number of tools that are designed to make it easy to experiment with the use of Verifiable Data Structures to apply to datasets made available by government agencies.
 
