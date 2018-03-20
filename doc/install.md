@@ -5,3 +5,4 @@ The following shows how you can add a verifiable log for a table in an arbitrary
 1. [Run the verifiable logs server](./build-and-deploy-log-server.md)
 2. [Prep your database](./database-integration.md)
 3. [Run the row submitted](./submit-rows-to-logs.md)
+4. [Examine the log produced](./log-experiments.md)

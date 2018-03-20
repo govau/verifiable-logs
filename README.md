@@ -56,3 +56,7 @@ Any interested party can then:
 2. Efficient verify the inclusion of a row in a verifiable log, by requesting an inclusion proof.
 3. Efficiently verify the consistency of a log between two fetched states, proving the append-only properties of the log.
 4. Audit, by fetching all entries, the correct operation of the log.
+
+## Next
+
+[[Jump to Getting Started]](./doc/install.md)
