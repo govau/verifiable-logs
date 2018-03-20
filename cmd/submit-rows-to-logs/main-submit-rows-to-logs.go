@@ -35,9 +35,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	tableValidator, err := generalisedtransparency.CreateNamedValidator(os.Getenv("VERIFIABLE_TABLENAME_VALIDATOR"), os.Getenv("VERIFIABLE_TABLENAME_VALIDATOR_PARAM"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	logSubmitter := &generalisedtransparency.LogSubmitter{
-		Server: os.Getenv("VERIFIABLE_LOG_SERVER"),
-		APIKey: os.Getenv("VERIFIABLE_LOG_API_KEY"),
+		Server:             os.Getenv("VERIFIABLE_LOG_SERVER"),
+		APIKey:             os.Getenv("VERIFIABLE_LOG_API_KEY"),
+		TableNameValidator: tableValidator,
 	}
 	qc := que.NewClient(pgxPool)
 	workers := que.NewWorkerPool(qc, que.WorkMap{
@@ -50,9 +56,13 @@ func main() {
 			if err != nil {
 				return err
 			}
-			return logSubmitter.SubmitToLogAndUpdateRecord(context.Background(), jd.Table, jd.Data, job.Conn())
+			log.Println("updating %s, row %s", jd.Table, jd.Data["_id"])
+			err = logSubmitter.SubmitToLogAndUpdateRecord(context.Background(), jd.Table, jd.Data, job.Conn())
+			log.Println("result:", err)
+			return err
 		},
 	}, workerCount)
+	workers.Queue = os.Getenv("QUE_QUEUE")
 
 	// Prepare a shutdown function
 	shutdown := func() {

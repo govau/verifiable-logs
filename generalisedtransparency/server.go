@@ -29,6 +29,9 @@ type Server struct {
 	// Writer is a storage layer where we can write for the same reasons we need to read above
 	Writer verifiable.StorageWriter
 
+	// TableNameValidator only allows logs to be created for the specified tables
+	TableNameValidator TableNameValidator
+
 	// Known logs - here we caching the signing key. TODO, consider caching all sorts of other things!
 	// We actually use this on every request, if nothing else but an indication of if a log exists, and thus whether
 	// we should allow a read-only operation to do (to stop creating new tables on read of a non-existent log)

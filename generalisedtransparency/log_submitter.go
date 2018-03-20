@@ -1,15 +1,18 @@
 package generalisedtransparency
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/benlaurie/objecthash/go/objecthash"
 	ct "github.com/google/certificate-transparency-go"
@@ -17,7 +20,6 @@ import (
 	"github.com/google/certificate-transparency-go/jsonclient"
 	"github.com/google/certificate-transparency-go/tls"
 	"github.com/jackc/pgx"
-	uuid "github.com/satori/go.uuid"
 )
 
 // LogSubmitter takes a server base, URL and an API key, and uses
@@ -28,6 +30,9 @@ type LogSubmitter struct {
 
 	// APIKey is added an an Authorization header
 	APIKey string
+
+	// TableNameValidator validates a table name before processing it
+	TableNameValidator TableNameValidator
 
 	verifierMutex sync.RWMutex
 	verifiers     map[string]*ct.SignatureVerifier
@@ -53,19 +58,18 @@ func (h *LogSubmitter) SubmitToLogAndUpdateRecord(ctx context.Context, tableName
 	if (idAsFloat - float64(id)) != 0.0 {
 		return errors.New("json (which cannot represent an integer) has defeated us")
 	}
+	log.Printf("before: %#v\n", dataToSubmit)
 
-	dataToSend := filterRow(dataToSubmit)
-	oh, err := objecthash.ObjectHash(dataToSend)
+	dataToSend, oh, err := filterAndHash(dataToSubmit)
 	if err != nil {
 		return err
 	}
 
-	// Make sure table is a UUID to prevent us from making an inadvertent call to the wrong path
-	u, err := uuid.FromString(tableName)
+	// Make sure table is a valid to prevent us from making an inadvertent call to the wrong path
+	canonTable, err := h.TableNameValidator.ValidateAndCanonicaliseTableName(tableName)
 	if err != nil {
 		return err
 	}
-	canonTable := u.String()
 
 	currentSCT, _ := dataToSubmit["signed_certificate_timestamp"].(string)
 	if currentSCT != "" && h.verifyIt(canonTable, currentSCT, oh) == nil {
@@ -123,19 +127,26 @@ func (h *LogSubmitter) SubmitToLogAndUpdateRecord(ctx context.Context, tableName
 	}
 
 	// Now filter and hash it
-	newObjHash, err := objecthash.ObjectHash(filterRow(rowData))
+	_, newObjHash, err := filterAndHash(rowData)
 	if err != nil {
 		return err
 	}
 
 	// Is our SCT valid for the state the row is now in?
-	if newObjHash != oh {
+	if !bytes.Equal(newObjHash[:], oh[:]) {
 		// must have changed since, nothing more we can do
 		return nil
 	}
 
+	toSetSCT := base64.StdEncoding.EncodeToString(tlsEncode)
+
+	// Is the SCT we want to set identical to what is already set?
+	if toSetSCT == rowData["signed_certificate_timestamp"] {
+		return nil // nothing to do ehre
+	}
+
 	// We are good to go, so save it out
-	_, err = tx.Exec(fmt.Sprintf(`UPDATE "%s" SET signed_certificate_timestamp = $1 WHERE _id = $2`, canonTable), base64.StdEncoding.EncodeToString(tlsEncode), id)
+	_, err = tx.Exec(fmt.Sprintf(`UPDATE "%s" SET signed_certificate_timestamp = $1 WHERE _id = $2`, canonTable), toSetSCT, id)
 	if err != nil {
 		return err
 	}
@@ -302,7 +313,7 @@ func (h *LogSubmitter) verifyIt(table, currentSCT string, hash ct.ObjectHash) er
 	return nil
 }
 
-func filterRow(data map[string]interface{}) map[string]interface{} {
+func filterAndHash(data map[string]interface{}) (map[string]interface{}, ct.ObjectHash, error) {
 	dataToSend := make(map[string]interface{})
 	for k, v := range data {
 		// Don't count the internal fields
@@ -317,10 +328,35 @@ func filterRow(data map[string]interface{}) map[string]interface{} {
 		if v == nil {
 			continue
 		}
-		dataToSend[k] = v
+
+		// We need to canonicalize some types, e.g. by default our DB driver seems to
+		// return times without zones to localtime, whereas the json operator in postgres seems
+		// to use UTC.
+		switch vv := v.(type) {
+		case time.Time:
+			dataToSend[k] = vv.UTC().Format("2006-01-02T15:04:05.999999-07:00") // appears to match the postgres format
+		default:
+			dataToSend[k] = vv
+		}
 	}
 
-	return dataToSend
+	// Marshal, then unmarshal so that things like time.Time turn into a consistent format
+	rdBytes, err := json.Marshal(dataToSend)
+	if err != nil {
+		return nil, ct.ObjectHash{}, err
+	}
+	var rdFresh map[string]interface{}
+	err = json.Unmarshal(rdBytes, &rdFresh)
+	if err != nil {
+		return nil, ct.ObjectHash{}, err
+	}
+
+	oh, err := objecthash.ObjectHash(rdFresh)
+	if err != nil {
+		return nil, ct.ObjectHash{}, err
+	}
+
+	return rdFresh, oh, nil
 }
 
 type authRT struct {

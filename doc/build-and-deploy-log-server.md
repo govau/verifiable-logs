@@ -18,11 +18,18 @@ export VCAP_SERVICES='{"postgres": [{"credentials": {"username": "verifiable", "
 export PORT=8080
 export VDB_SECRET=secret
 
+# Acceptable log names
+export VERIFIABLE_TABLENAME_VALIDATOR=whitelist
+export VERIFIABLE_TABLENAME_VALIDATOR_PARAM=mytable
+
 # Get dependencies
 dep ensure
 
-# Run the app
-go run cmd/verifiable-log/main-verifiable-log.go
+# Build the app
+go install github.com/govau/verifiable-logs/cmd/verifiable-logs-server
+
+# Run it
+verifiable-logs-server
 ```
 
 ## Deployment

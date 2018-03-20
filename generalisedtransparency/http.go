@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/continusec/verifiabledatastructures/verifiable"
 )
@@ -29,12 +28,15 @@ func (cts *Server) CreateRESTHandler() http.Handler {
 func (cts *Server) wrapCall(apiKey string, ensureExists bool, f func(log *verifiable.Log, r *http.Request) (interface{}, error)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Println(r.URL.String())
-		u, err := uuid.FromString(mux.Vars(r)["uuid"])
+
+		// Make sure table is a valid to prevent us from making an inadvertent call to the wrong path
+		canonTable, err := cts.TableNameValidator.ValidateAndCanonicaliseTableName(mux.Vars(r)["logname"])
 		if err != nil {
-			http.Error(w, "bad dataset id", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		vlog := cts.Service.Account(cts.Account, apiKey).VerifiableLog(u.String())
+
+		vlog := cts.Service.Account(cts.Account, apiKey).VerifiableLog(canonTable)
 		if ensureExists {
 			// This is to make sure we don't spuriously create way too many tables in postgresql for logs that don't exists
 			_, err = cts.getSigningKey(vlog, r, false)
@@ -61,5 +63,5 @@ func (cts *Server) wrapCall(apiKey string, ensureExists bool, f func(log *verifi
 }
 
 func (cts *Server) addCallToRouter(r *mux.Router, path, apiKey string, ensureExists bool, f func(log *verifiable.Log, r *http.Request) (interface{}, error)) {
-	r.HandleFunc("/dataset/{uuid}/ct/v1"+path, cts.wrapCall(apiKey, ensureExists, f))
+	r.HandleFunc("/dataset/{logname}/ct/v1"+path, cts.wrapCall(apiKey, ensureExists, f))
 }

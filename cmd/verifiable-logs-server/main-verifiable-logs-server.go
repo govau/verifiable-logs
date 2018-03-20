@@ -35,6 +35,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	tableValidator, err := generalisedtransparency.CreateNamedValidator(os.Getenv("VERIFIABLE_TABLENAME_VALIDATOR"), os.Getenv("VERIFIABLE_TABLENAME_VALIDATOR_PARAM"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Prepare a shutdown function
 	shutdown := func() {
 		pgxPool.Close()
@@ -103,11 +108,12 @@ func main() {
 		Service: &verifiable.Client{
 			Service: server,
 		},
-		Account:        "data.gov.au",
-		ReadAPIKey:     "read",
-		WriteAPIKey:    "write",
-		Reader:         db,
-		Writer:         db,
-		ExternalAddKey: envLookup.MustString("VDB_SECRET"),
+		Account:            "data.gov.au",
+		ReadAPIKey:         "read",
+		WriteAPIKey:        "write",
+		Reader:             db,
+		Writer:             db,
+		ExternalAddKey:     envLookup.MustString("VDB_SECRET"),
+		TableNameValidator: tableValidator,
 	}).CreateRESTHandler()))
 }
