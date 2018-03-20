@@ -56,9 +56,11 @@ func main() {
 			if err != nil {
 				return err
 			}
-			log.Println("updating %s, row %s", jd.Table, jd.Data["_id"])
+			log.Printf("updating %s, row %s\n", jd.Table, jd.Data["_id"])
 			err = logSubmitter.SubmitToLogAndUpdateRecord(context.Background(), jd.Table, jd.Data, job.Conn())
-			log.Println("result:", err)
+			if err != nil {
+				log.Printf("error (will retry): %s", err)
+			}
 			return err
 		},
 	}, workerCount)

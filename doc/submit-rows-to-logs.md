@@ -28,8 +28,26 @@ export PGDATABASE=mydb
 export PGUSER=mydb
 export PGPASSWORD=mydb
 
+# Install dependencies
+dep ensure
+
+# Build the app
+go install github.com/govau/verifiable-logs/cmd/submit-rows-to-logs
+
 # Run
 submit-rows-to-logs
 ```
 
-This should pick up the row added previously.
+This should pick up the row added previously. Verify by (in your previous `psql` prompt) seeing the `signed_certificate_timestamp` field now populated:
+
+```sql
+SELECT * FROM mytable;
+ _id |                                                                   signed_certificate_timestamp                                                                   | foo |              bar              
+-----+------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----+-------------------------------
+   1 | AP3jBbYBP3zNLI6wFo39xSbEK2G11ofrbZ4YHjo3hVxxAAABYkHtkSYAAAQDAEgwRgIhAJGl3ZuPLM/MJTu4Vhy6zs43I6cExWCzBU9YVoONtEMtAiEA5hn4AckRnntPvGrhSZ7ZEyRt7ZjuaLdBonx9a4oyk0I= | hi  | 2018-03-20 05:40:35.780239+00
+(1 row)
+```
+
+## Next
+
+Now, let's [play with a log](./log-experiments.md).

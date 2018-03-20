@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -58,7 +57,6 @@ func (h *LogSubmitter) SubmitToLogAndUpdateRecord(ctx context.Context, tableName
 	if (idAsFloat - float64(id)) != 0.0 {
 		return errors.New("json (which cannot represent an integer) has defeated us")
 	}
-	log.Printf("before: %#v\n", dataToSubmit)
 
 	dataToSend, oh, err := filterAndHash(dataToSubmit)
 	if err != nil {

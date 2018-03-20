@@ -39,12 +39,12 @@ At around the same time, [Tom Loosemore](https://tom.loosemore.com/about/), (for
 
 ## Application of an RFC6962-style log to an open dataset
 
-To experiment with verifiable datasets, we've done the following:
+To experiment with verifiable datasets, we're working on the following:
 
-1. Deployed an RFC6962-based Verifiable Log server to [cloud.gov.au](https://cloud.gov.au) (details [here](./doc/rfc6962-objecthash.md)).
-2. Created a trigger that a dataset hosted on [data.gov.au](https://data.gov.au) can choose to use, which will submit all entries added to a dataset, to a corresponding Verifiable Log (details [here](./doc/data-gov-au-example.md)).
+1. Deploying an RFC6962-based Verifiable Log server to [cloud.gov.au](https://cloud.gov.au) (details [here](./doc/rfc6962-objecthash.md)).
+2. Creating a trigger that a dataset hosted on [data.gov.au](https://data.gov.au) can choose to use, which will submit all entries added to a dataset, to a corresponding Verifiable Log.
 
-### What does this enable?
+### What will this enable?
 
 This enable the owner of any public dataset on data.gov.au to be able to easily enable verifiable properties for their dataset.
 
@@ -56,5 +56,3 @@ Any interested party can then:
 2. Efficient verify the inclusion of a row in a verifiable log, by requesting an inclusion proof.
 3. Efficiently verify the consistency of a log between two fetched states, proving the append-only properties of the log.
 4. Audit, by fetching all entries, the correct operation of the log.
-
-

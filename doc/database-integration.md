@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS mytable (
     -- signed_certificate_timestamp must be allowed to be empty, and is populated by our tooling
     signed_certificate_timestamp  TEXT,
 
-    -- any other fields you like, ie your regualr schema. Note that fields beginning with "_" are excluded from the objecthash
+    -- any other fields you like, ie your regular schema. Note that fields beginning with "_" are excluded from the objecthash
     foo                           TEXT,
     bar                           TIMESTAMPTZ DEFAULT NOW()
 );

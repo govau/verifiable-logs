@@ -2,8 +2,6 @@
 
 The verifiable log server that we have exposed is based on RFC6962 with minor changes as decribed below.
 
-We have
-
 ## TLS Structures
 
 The following 3 TLS structures are modified to accepted a 3rd type of entry, `objecthash_entry` (changes in **bold**):
