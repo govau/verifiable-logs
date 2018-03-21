@@ -74,11 +74,37 @@ where a single server may host many verifiable logs, each under a different path
 
 The following messages are implemented as per RFC with no changes:
 
-- [4.3.  Retrieve Latest Signed Tree Head](https://tools.ietf.org/html/rfc6962#section-4.3)
 - [4.4.  Retrieve Merkle Consistency Proof between Two Signed Tree Heads](https://tools.ietf.org/html/rfc6962#section-4.4)
 - [4.5.  Retrieve Merkle Audit Proof from Log by Leaf Hash](https://tools.ietf.org/html/rfc6962#section-4.5)
 - [4.6.  Retrieve Entries from Log](https://tools.ietf.org/html/rfc6962#section-4.6)
 - [4.8.  Retrieve Entry+Merkle Audit Proof from Log](https://tools.ietf.org/html/rfc6962#section-4.8)
+
+### Augmented messages
+
+The following messages are implemented as per RFC with minor additions:
+
+#### [4.3.  Retrieve Latest Signed Tree Head](https://tools.ietf.org/html/rfc6962#section-4.3)
+
+An optional parameter `tree_size` is added. Outputs are unchanged:
+
+```
+GET https://<server>/dataset/<log>/ct/v1/get-sth
+
+<b>Inputs:
+
+      tree_size (optional):  The tree_size of the tree on which to base the signed tree head,
+         in decimal. If set to 0, then the latest available is returned (same as not setting it).</b>
+
+Outputs:
+
+    tree_size:  The size of the tree, in entries, in decimal.
+
+    timestamp:  The timestamp, in decimal.
+
+    sha256_root_hash:  The Merkle Tree Hash of the tree, in base64.
+
+    tree_head_signature:  A TreeHeadSignature for the above data.
+```
 
 ### New messages
 

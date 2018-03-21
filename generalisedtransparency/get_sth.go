@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/benlaurie/objecthash/go/objecthash"
@@ -20,7 +21,18 @@ func toIntBinary(i uint64) []byte {
 }
 
 func (cts *Server) handleSTH(vlog *verifiable.Log, r *http.Request) (interface{}, error) {
-	root, err := vlog.TreeHead(r.Context(), verifiable.Head)
+	sizeToFetch := int(verifiable.Head)
+
+	ts := r.FormValue("tree_size")
+	if ts != "" {
+		var err error
+		sizeToFetch, err = strconv.Atoi(ts)
+		if err != nil {
+			return nil, verifiable.ErrInvalidRequest
+		}
+	}
+
+	root, err := vlog.TreeHead(r.Context(), int64(sizeToFetch))
 	if err != nil {
 		return nil, err
 	}

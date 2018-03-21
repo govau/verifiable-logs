@@ -63,7 +63,7 @@
     "x509",
     "x509/pkix"
   ]
-  revision = "bb90d30fbc20cacd2af9359de9d4300faf843388"
+  revision = "fc03246b9e845fb7334db3216098f75b980c92e6"
   source = "github.com/govau/certificate-transparency-go"
 
 [[projects]]
