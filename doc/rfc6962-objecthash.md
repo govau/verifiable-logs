@@ -87,8 +87,10 @@ The following messages are implemented as per RFC with minor additions:
 
 An optional parameter `tree_size` is added. Outputs are unchanged:
 
-```
+<pre>
 GET https://<server>/dataset/<log>/ct/v1/get-sth
+
+<del>No inputs.</del>
 
 <b>Inputs:
 
@@ -104,7 +106,7 @@ Outputs:
     sha256_root_hash:  The Merkle Tree Hash of the tree, in base64.
 
     tree_head_signature:  A TreeHeadSignature for the above data.
-```
+</pre>
 
 ### New messages
 
