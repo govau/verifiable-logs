@@ -3,20 +3,16 @@ package generalisedtransparency
 import (
 	"bytes"
 	"context"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/benlaurie/objecthash/go/objecthash"
 	ct "github.com/google/certificate-transparency-go"
-	"github.com/google/certificate-transparency-go/client"
-	"github.com/google/certificate-transparency-go/jsonclient"
 	"github.com/google/certificate-transparency-go/tls"
 	"github.com/jackc/pgx"
 )
@@ -33,14 +29,8 @@ type LogSubmitter struct {
 	// TableNameValidator validates a table name before processing it
 	TableNameValidator TableNameValidator
 
-	verifierMutex sync.RWMutex
-	verifiers     map[string]*ct.SignatureVerifier
-
-	logClientMutex sync.RWMutex
-	logClients     map[string]*client.LogClient
-
-	publicKeyMutex sync.RWMutex
-	publicKeyDERs  map[string][]byte
+	logClientMutex sync.Mutex
+	logClients     map[string]*LogClient
 }
 
 // SubmitToLogAndUpdateRecord submits the given data to a verifiable log,
@@ -75,7 +65,7 @@ func (h *LogSubmitter) SubmitToLogAndUpdateRecord(ctx context.Context, tableName
 		return nil
 	}
 
-	logClient, err := h.getLogClient(canonTable)
+	logClient, err := h.getLogClient(canonTable).GetAddClient()
 	if err != nil {
 		return err
 	}
@@ -158,128 +148,26 @@ func (h *LogSubmitter) baseURLForLog(canonTable string) string {
 }
 
 // Table name must already be canonical
-func (h *LogSubmitter) getLogClient(canonTable string) (*client.LogClient, error) {
-	var rv *client.LogClient
-
-	h.logClientMutex.RLock()
-	if h.logClients != nil {
-		rv = h.logClients[canonTable]
-	}
-	h.logClientMutex.RUnlock()
-
-	if rv != nil {
-		return rv, nil
-	}
-
-	// NOTE that the log client we get does NOT do verification.
-	// This is deliberate, as may otherwise have a bootstrap problem whereby we
-	// don't create a log until the first item is added to it, and thus do not have
-	// a public key.
-	rv, err := client.New(h.baseURLForLog(canonTable), &http.Client{
-		Transport: &authRT{
-			APIKey: h.APIKey,
-		},
-	}, jsonclient.Options{})
-	if err != nil {
-		return nil, err
-	}
-
+func (h *LogSubmitter) getLogClient(canonTable string) *LogClient {
 	h.logClientMutex.Lock()
 	defer h.logClientMutex.Unlock()
 
 	if h.logClients == nil {
-		h.logClients = make(map[string]*client.LogClient)
+		h.logClients = make(map[string]*LogClient)
+	}
+
+	rv := h.logClients[canonTable]
+	if rv != nil {
+		return rv
+	}
+
+	rv = &LogClient{
+		URL:       h.baseURLForLog(canonTable),
+		AddAPIKey: h.APIKey,
 	}
 	h.logClients[canonTable] = rv
 
-	return rv, nil
-}
-
-// Table name must already be canonical
-func (h *LogSubmitter) getVerifier(canonTable string) (*ct.SignatureVerifier, error) {
-	var rv *ct.SignatureVerifier
-
-	h.verifierMutex.RLock()
-	if h.verifiers != nil {
-		rv = h.verifiers[canonTable]
-	}
-	h.verifierMutex.RUnlock()
-
-	if rv != nil {
-		return rv, nil
-	}
-
-	der, err := h.getPublicKeyDER(canonTable)
-	if err != nil {
-		return nil, err
-	}
-
-	pubKey, err := x509.ParsePKIXPublicKey(der)
-	if err != nil {
-		return nil, err
-	}
-
-	rv, err = ct.NewSignatureVerifier(pubKey)
-	if err != nil {
-		return nil, err
-	}
-
-	h.verifierMutex.Lock()
-	defer h.verifierMutex.Unlock()
-
-	if h.verifiers == nil {
-		h.verifiers = make(map[string]*ct.SignatureVerifier)
-	}
-	h.verifiers[canonTable] = rv
-
-	return rv, nil
-}
-
-// Table name must already be canonical
-func (h *LogSubmitter) getPublicKeyDER(canonTable string) ([]byte, error) {
-	var rv []byte
-	h.publicKeyMutex.RLock()
-	if h.publicKeyDERs != nil {
-		rv = h.publicKeyDERs[canonTable]
-	}
-	h.publicKeyMutex.RUnlock()
-
-	if rv != nil {
-		return rv, nil
-	}
-
-	// Go fetch it, grab a mutex so we don't slam servers
-	h.publicKeyMutex.Lock()
-	defer h.publicKeyMutex.Unlock()
-
-	if h.publicKeyDERs == nil {
-		h.publicKeyDERs = make(map[string][]byte)
-	}
-
-	// One last check, since we now have a write mutex
-	rv = h.publicKeyDERs[canonTable]
-	if rv != nil {
-		return rv, nil
-	}
-
-	resp, err := http.Get(h.baseURLForLog(canonTable) + "/ct/v1/metadata")
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("bad http status code fetching log metadata")
-	}
-
-	var md MetadataResponse
-	err = json.NewDecoder(resp.Body).Decode(&md)
-	if err != nil {
-		return nil, err
-	}
-
-	h.publicKeyDERs[canonTable] = md.Key
-	return md.Key, nil
+	return rv
 }
 
 // table name must already be canonical
@@ -297,7 +185,7 @@ func (h *LogSubmitter) verifyIt(table, currentSCT string, hash ct.ObjectHash) er
 		return errors.New("trailing bytes")
 	}
 
-	verifier, err := h.getVerifier(table)
+	verifier, err := h.getLogClient(table).GetVerifier()
 	if err != nil {
 		return err
 	}
@@ -355,13 +243,4 @@ func filterAndHash(data map[string]interface{}) (map[string]interface{}, ct.Obje
 	}
 
 	return rdFresh, oh, nil
-}
-
-type authRT struct {
-	APIKey string
-}
-
-func (a *authRT) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("Authorization", a.APIKey)
-	return http.DefaultTransport.RoundTrip(req)
 }
