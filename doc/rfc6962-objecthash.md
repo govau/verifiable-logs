@@ -88,7 +88,7 @@ The following messages are implemented as per RFC with minor additions:
 An optional parameter `tree_size` is added. Outputs are unchanged:
 
 <pre>
-GET https://<server>/dataset/<log>/ct/v1/get-sth
+GET https://&lt;server&gt;/dataset/&lt;log&gt;/ct/v1/get-sth
 
 <del>No inputs.</del>
 
