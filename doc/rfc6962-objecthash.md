@@ -116,7 +116,7 @@ The following meessages are not defined by the RFC and are specific to our imple
 
 This is not defined in RFC6962, and is designed to allow adding arbitrary data to a verifiable log. It replaces "Add Chain to Log" and "Add PreCertChain to Log".
 
-```
+```rfc
 POST https://<server>/dataset/<log>/ct/v1/add-objecthash
 
 Inputs (JSON):
@@ -125,7 +125,7 @@ Inputs (JSON):
      as part of the TimestampedEntry, and is used as input to the
      SignedCertificateTimestamp. Normally this is the Object Hash of the
      extra_data object.
-     
+
   extra_data:  Arbitrary JSON structure as relevant to the client.
      This data is not processed, other than being serialized and made
      availabe via "/get-entries". Expected usage is that this is the
@@ -140,11 +140,29 @@ The [Object Hash](https://github.com/benlaurie/objecthash) is that described [he
 
 Note that this API requires authentication (since it adds data to a log), and we do not define the mechanism in this document, as it is currently intended as an implementation detail between different components in this repository.
 
+#### Get ObjectHash
+
+This is not defined in RFC6962, and is designed to allow fetching a signed certificate timestamp for an already added hash.
+
+```rfc
+GET https://<server>/dataset/<log>/ct/v1/get-objecthash
+
+Inputs:
+
+  hash:  32 base64-encoded bytes representing the objecthash to look up.
+
+Outputs:
+
+   (same as defined by for "Add Chain to Log")
+```
+
+The [Object Hash](https://github.com/benlaurie/objecthash) is that described [here](https://github.com/benlaurie/objecthash).
+
 #### Get Metadata
 
 Returns the public key for a log.
 
-```
+```rfc
 POST https://<server>/dataset/<log>/ct/v1/metadata
 
 Inputs:  none
@@ -161,4 +179,3 @@ The following messages are specific to an X.509 Certificate Transparency log, an
 - [4.1.  Add Chain to Log](https://tools.ietf.org/html/rfc6962#section-4.1)
 - [4.2.  Add PreCertChain to Log](https://tools.ietf.org/html/rfc6962#section-4.2)
 - [4.7.  Retrieve Accepted Root Certificates](https://tools.ietf.org/html/rfc6962#section-4.7)
-

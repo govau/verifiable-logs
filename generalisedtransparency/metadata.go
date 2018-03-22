@@ -13,7 +13,7 @@ type MetadataResponse struct {
 }
 
 func (cts *Server) handleMetadata(vlog *verifiable.Log, r *http.Request) (interface{}, error) {
-	sk, err := cts.getSigningKey(vlog, r, false)
+	sk, err := cts.getSigningKey(r.Context(), vlog, false)
 	if err != nil {
 		return nil, err
 	}

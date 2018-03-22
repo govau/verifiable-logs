@@ -16,6 +16,7 @@ func (cts *Server) CreateRESTHandler() http.Handler {
 
 	cts.addCallToRouter(r, "/metadata", cts.ReadAPIKey, true, cts.handleMetadata)
 	cts.addCallToRouter(r, "/add-objecthash", cts.WriteAPIKey, false, cts.handleAdd)
+	cts.addCallToRouter(r, "/get-objecthash", cts.ReadAPIKey, true, cts.handleGetObjectHash)
 	cts.addCallToRouter(r, "/get-sth", cts.ReadAPIKey, true, cts.handleSTH)
 	cts.addCallToRouter(r, "/get-sth-consistency", cts.ReadAPIKey, true, cts.handleSTHConsistency)
 	cts.addCallToRouter(r, "/get-proof-by-hash", cts.ReadAPIKey, true, cts.handleProofByHash)
@@ -39,7 +40,7 @@ func (cts *Server) wrapCall(apiKey string, ensureExists bool, f func(log *verifi
 		vlog := cts.Service.Account(cts.Account, apiKey).VerifiableLog(canonTable)
 		if ensureExists {
 			// This is to make sure we don't spuriously create way too many tables in postgresql for logs that don't exists
-			_, err = cts.getSigningKey(vlog, r, false)
+			_, err = cts.getSigningKey(r.Context(), vlog, false)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusNotFound)
 				return

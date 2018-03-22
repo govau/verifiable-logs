@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/benlaurie/objecthash/go/objecthash"
 	"github.com/continusec/verifiabledatastructures/verifiable"
 	ct "github.com/google/certificate-transparency-go"
 	"github.com/google/certificate-transparency-go/tls"
@@ -38,11 +37,7 @@ func (cts *Server) handleSTH(vlog *verifiable.Log, r *http.Request) (interface{}
 	}
 
 	// See if we have an STH, and if so, we will return that
-	ns, err := objecthash.ObjectHash(map[string]interface{}{
-		"account": vlog.Log.Account.Id,
-		"name":    vlog.Log.Name,
-		"type":    "ctlog",
-	})
+	ns, err := cts.getNs(vlog)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +62,7 @@ func (cts *Server) handleSTH(vlog *verifiable.Log, r *http.Request) (interface{}
 		return nil, err
 	}
 
-	sk, err := cts.getSigningKey(vlog, r, false)
+	sk, err := cts.getSigningKey(r.Context(), vlog, false)
 	if err != nil {
 		return nil, err
 	}

@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
-	"net/http"
 
 	"github.com/benlaurie/objecthash/go/objecthash"
 	"github.com/continusec/verifiabledatastructures/pb"
@@ -61,7 +60,7 @@ func (cts *Server) cacheSigningKey(logKeyString string, logMetadata *govpb.LogMe
 	return rv, nil
 }
 
-func (cts *Server) getSigningKey(vlog *verifiable.Log, r *http.Request, create bool) (*signingKey, error) {
+func (cts *Server) getSigningKey(ctx context.Context, vlog *verifiable.Log, create bool) (*signingKey, error) {
 	logKey, err := makeKeyForLog(vlog.Log)
 	if err != nil {
 		return nil, err
@@ -89,7 +88,7 @@ func (cts *Server) getSigningKey(vlog *verifiable.Log, r *http.Request, create b
 	}
 
 	var logMetadata govpb.LogMetadata
-	err = cts.Reader.ExecuteReadOnly(r.Context(), ns[:], func(ctx context.Context, kr verifiable.KeyReader) error {
+	err = cts.Reader.ExecuteReadOnly(ctx, ns[:], func(ctx context.Context, kr verifiable.KeyReader) error {
 		return kr.Get(ctx, logKey, &logMetadata)
 	})
 	switch err {
@@ -115,7 +114,7 @@ func (cts *Server) getSigningKey(vlog *verifiable.Log, r *http.Request, create b
 		return nil, verifiable.ErrInternalError // swallow crypto errs
 	}
 
-	err = cts.Writer.ExecuteUpdate(r.Context(), ns[:], func(ctx context.Context, kw verifiable.KeyWriter) error {
+	err = cts.Writer.ExecuteUpdate(ctx, ns[:], func(ctx context.Context, kw verifiable.KeyWriter) error {
 		// Check to see if anyone else has created one
 		err := kw.Get(ctx, logKey, &logMetadata)
 		switch err {

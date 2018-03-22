@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/benlaurie/objecthash/go/objecthash"
 	"github.com/continusec/verifiabledatastructures/pb"
 	"github.com/continusec/verifiabledatastructures/verifiable"
 	ct "github.com/google/certificate-transparency-go"
@@ -29,36 +28,11 @@ func (cts *Server) handleAdd(vlog *verifiable.Log, r *http.Request) (interface{}
 		return nil, verifiable.ErrInvalidRequest
 	}
 
-	// See if we have an SCT for this, and if so, we will return that
-	ns, err := objecthash.ObjectHash(map[string]interface{}{
-		"account": vlog.Log.Account.Id,
-		"name":    vlog.Log.Name,
-		"type":    "ctlog",
-	})
-	if err != nil {
-		return nil, err
-	}
-	tsKey := append([]byte("sct"), ohr.Hash[:]...)
-	var sct govpb.AddResponse
-	err = cts.Reader.ExecuteReadOnly(r.Context(), ns[:], func(ctx context.Context, kr verifiable.KeyReader) error {
-		return kr.Get(ctx, tsKey, &sct)
-	})
+	existingSCT, err := cts.findSCT(r.Context(), vlog, ohr.Hash[:])
 	switch err {
 	case nil:
-		// Get log ID and we're done
-		sk, err := cts.getSigningKey(vlog, r, false)
-		if err != nil {
-			return nil, err
-		}
-		// we're done!
-		return &ct.AddChainResponse{
-			ID:         sk.LogID[:],
-			SCTVersion: ct.V1,
-			Signature:  sct.Signature,
-			Timestamp:  uint64(sct.Timestamp),
-			Extensions: "",
-		}, nil
-	case verifiable.ErrNoSuchKey:
+		return existingSCT, nil
+	case verifiable.ErrNotFound:
 	// pass, continue, we'll make one
 	default:
 		return nil, err
@@ -86,7 +60,7 @@ func (cts *Server) handleAdd(vlog *verifiable.Log, r *http.Request) (interface{}
 	}
 
 	// Grab the signing key
-	sk, err := cts.getSigningKey(vlog, r, true)
+	sk, err := cts.getSigningKey(r.Context(), vlog, true)
 	if err != nil {
 		return nil, err
 	}
@@ -113,12 +87,18 @@ func (cts *Server) handleAdd(vlog *verifiable.Log, r *http.Request) (interface{}
 		return nil, err
 	}
 
-	sct = govpb.AddResponse{
+	sct := govpb.AddResponse{
 		Signature: sigBytes,
 		Timestamp: ts,
 	}
 
 	// Save it out
+	ns, err := cts.getNs(vlog)
+	if err != nil {
+		return nil, err
+	}
+	tsKey := append([]byte("sct"), ohr.Hash[:]...)
+
 	err = cts.Writer.ExecuteUpdate(r.Context(), ns[:], func(ctx context.Context, kw verifiable.KeyWriter) error {
 		return kw.Set(ctx, tsKey, &sct)
 	})
