@@ -8,12 +8,14 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/continusec/verifiabledatastructures/verifiable"
+	"github.com/govau/verifiable-logs/assets"
 )
 
 // CreateRESTHandler returns an http.Handler for our REST API
 func (cts *Server) CreateRESTHandler() http.Handler {
 	r := mux.NewRouter()
 
+	// REST API
 	cts.addCallToRouter(r, "/metadata", cts.ReadAPIKey, true, cts.handleMetadata)
 	cts.addCallToRouter(r, "/add-objecthash", cts.WriteAPIKey, false, cts.handleAdd)
 	cts.addCallToRouter(r, "/get-objecthash", cts.ReadAPIKey, true, cts.handleGetObjectHash)
@@ -23,7 +25,30 @@ func (cts *Server) CreateRESTHandler() http.Handler {
 	cts.addCallToRouter(r, "/get-entries", cts.ReadAPIKey, true, cts.handleGetEntries)
 	cts.addCallToRouter(r, "/get-entry-and-proof", cts.ReadAPIKey, true, cts.handleGetEntryAndProof)
 
+	// Static
+	r.HandleFunc("/dataset/{logname}/", cts.staticHandler("text/html", "index.html"))
+	r.HandleFunc("/verifiable.js", cts.staticHandler("application/javascript", "verifiable.js"))
+
+	// Convenience redirect
+	r.HandleFunc("/dataset/{logname}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, r.URL.RequestURI()+"/", http.StatusMovedPermanently)
+	})
+
 	return r
+}
+
+func (cts *Server) staticHandler(mime, name string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Println(r.URL.String())
+		data, err := assets.Asset("assets/static/" + name)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", mime)
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
+	}
 }
 
 func (cts *Server) wrapCall(apiKey string, ensureExists bool, f func(log *verifiable.Log, r *http.Request) (interface{}, error)) func(http.ResponseWriter, *http.Request) {
@@ -58,6 +83,7 @@ func (cts *Server) wrapCall(apiKey string, ensureExists bool, f func(log *verifi
 		case verifiable.ErrNotAuthorized:
 			http.Error(w, err.Error(), http.StatusForbidden)
 		default:
+			log.Println(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
