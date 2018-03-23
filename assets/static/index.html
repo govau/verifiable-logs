@@ -5,17 +5,26 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
+        <script type="text/javascript" src="../../sha256.js"></script>
+        <script type="text/javascript" src="../../verifiable.js"></script>
+
         <style type="text/css">
         </style>
 
         <script type="text/javascript">
-            function binaryArrayToString(d) {
-                var rv = "";
-                for (var j = 0; j < d.length; j++) {
-                    rv += String.fromCharCode(d[j]);
-                }
-                return rv;
-            }
+            NODE_WIDTH = 320;
+            NODE_HEIGHT = 60;
+            NODE_OFFSET = 10;
+            NODE_BIG_OFFSET = 15;
+            COLORS = {
+                "consistency": "LightCoral",
+                "inclusion": "LightCoral",
+                "calculated": "DarkKhaki",
+                "first_hash": "BlueViolet",
+                "second_hash": "BlueViolet",
+                "tree_hash": "BlueViolet",
+                "leaf_input": "#48C9B0",
+            };
 
             function restCall(path, data, success, failure) {
                 var req = new XMLHttpRequest();
@@ -46,6 +55,26 @@
                 req.send(data);
             }
 
+            function doGetEntries(first, lastExclusive) {
+                restCall("ct/v1/get-entries?start=" + first + "&end=" + (lastExclusive - 1), null, function (result) {
+                    console.log(result);
+
+                    var s = "";
+                    for (var i = 0; i < result.entries.length; i++) {
+                        s += atob(result.entries[i].extra_data) + "\n";
+                    }
+
+                    $("#get_entries_result").text(s);
+
+                    /* don't draw if more than 50, since about there hits a 32000 pixel limit for width in Chrome */
+                    if ((result.entries.length <= 50) && (first == 0)) {
+                        DrawTree($("#get_entries_diagram"), first, lastExclusive, leafinput_atob(result.entries));
+                    }
+                }, function (reason) {
+                    $("#get_entries_result").text("error: " + reason);
+                });
+            }
+
             $(function () {
                 $("#get_sth").click(function () {
                     restCall("ct/v1/get-sth?tree_size=" + Number($("#get_sth_tree_size").val()), null, function (result) {
@@ -59,16 +88,103 @@
                     });
                     return false;
                 });
-            })
+                $("#get_consistency").click(function () {
+                    restCall("ct/v1/get-sth?tree_size=" + Number($("#get_consistency_first").val()), null, function (first) {
+                        restCall("ct/v1/get-sth?tree_size=" + Number($("#get_consistency_second").val()), null, function (second) {
+                            restCall("ct/v1/get-sth-consistency?first=" + Number(first.tree_size) + "&second=" + Number(second.tree_size), null, function (result) {
+                                console.log(result);
+
+                                var s = "";
+                                s += "first tree size: " + first.tree_size + "\n";
+                                s += "first root hash: " + first.sha256_root_hash + "\n";
+                                s += "\n";
+                                s += "second tree size: " + second.tree_size + "\n";
+                                s += "second root hash: " + second.sha256_root_hash + "\n";
+                                s += "\n";
+
+                                s += "consistency audit path:\n\n";
+                                for (var i = 0; i < result.consistency.length; i++) {
+                                    s += result.consistency[i] + "\n";
+                                }
+
+                                $("#get_consistency_result").text(s);
+
+                                DrawConsistencyProof($("#get_consistency_diagram"), first.tree_size, atob(first.sha256_root_hash), second.tree_size, atob(second.sha256_root_hash), array_atob(result.consistency));
+                            }, function (reason) {
+                                $("#get_consistency_result").text("error: " + reason);
+                            });
+                        }, function (reason) {
+                            $("#get_consistency_result").text("error: " + reason);
+                        });
+                    }, function (reason) {
+                            $("#get_consistency_result").text("error: " + reason);
+                    });
+                    return false;
+                });
+                $("#get_entries").click(function () {
+                    var last = Number($("#get_entries_second").val());
+                    if (last == 0) {
+                        restCall("ct/v1/get-sth", null, function (result) {
+                            doGetEntries(Number($("#get_entries_first").val()), result.tree_size);
+                        }, function (reason) {
+                            $("#get_entries_result").text("error: " + reason);
+                        });
+                    }  else {
+                        doGetEntries(Number($("#get_entries_first").val()), last);
+                    }
+                });
+            });
         </script>
     </head>
     <body>
         <h1>Verifiable Log Viewer</h1>
         <p>See below for actions you can perform on this verifiable log. Note that all of these actions are read-only, feel free to click around without fear of breaking anything.</p>
-        <h2>Get Signed Tree Head</h2>
-        <p>This operation shows the signed tree head for the log.</p>
-        <p>[ <a href="#" id="get_sth">Fetch Signed Tree Head</a> ] Tree size (leave blank for latest): <input type="text" id="get_sth_tree_size" /></p>
-        <p>Result:</p>
-        <pre id="get_sth_result"></pre>
+        <div>
+            <hr />
+            <h2>Get Signed Tree Head</h2>
+            <p>This operation shows the signed tree head for the log.</p>
+            <p>
+                Tree size (leave blank for latest):
+                <input type="text" id="get_sth_tree_size" />
+                <br />
+                [ <a href="#" id="get_sth">Fetch Signed Tree Head</a> ]
+            </p>
+            <p>Result:</p>
+            <pre id="get_sth_result"></pre>
+        </div>
+        <div>
+            <hr />
+            <h2>Proove consistency</h2>
+            <p>This operation shows the append-only property of the log.</p>
+            <p>
+                First size (must be greater than 0):
+                <input type="text" id="get_consistency_first" value="1" />
+                <br />
+                Second size (leave blank for latest):
+                <input type="text" id="get_consistency_second" />
+                <br />
+                [ <a href="#" id="get_consistency">Fetch and show consistency proof</a> ]
+            </p>
+            <p>Result:</p>
+            <pre id="get_consistency_result"></pre>
+            <canvas id="get_consistency_diagram" />
+        </div>
+        <div>
+            <hr />
+            <h2>Get Entries</h2>
+            <p>This operation shows the entries in the log.</p>
+            <p>
+                First:
+                <input type="text" id="get_entries_first" value="0" />
+                <br />
+                End (exclusive, leave blank for all):
+                <input type="text" id="get_entries_second" />
+                <br />
+                [ <a href="#" id="get_entries">Fetch entries</a> ]
+            </p>
+            <p>Result:</p>
+            <pre id="get_entries_result"></pre>
+            <canvas id="get_entries_diagram" />
+        </div>
     </body>
 </html>

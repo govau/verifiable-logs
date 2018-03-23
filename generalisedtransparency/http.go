@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/continusec/verifiabledatastructures/verifiable"
 	"github.com/govau/verifiable-logs/assets"
@@ -28,6 +30,7 @@ func (cts *Server) CreateRESTHandler() http.Handler {
 	// Static
 	r.HandleFunc("/dataset/{logname}/", cts.staticHandler("text/html", "index.html"))
 	r.HandleFunc("/verifiable.js", cts.staticHandler("application/javascript", "verifiable.js"))
+	r.HandleFunc("/sha256.js", cts.staticHandler("application/javascript", "sha256.js"))
 
 	// Convenience redirect
 	r.HandleFunc("/dataset/{logname}", func(w http.ResponseWriter, r *http.Request) {
@@ -72,10 +75,30 @@ func (cts *Server) wrapCall(apiKey string, ensureExists bool, f func(log *verifi
 			}
 		}
 		obj, err := f(vlog, r)
-		switch err {
-		case nil:
+		if err == nil {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(obj)
+			return
+		}
+
+		// Some errors are status code errors
+		s, ok := status.FromError(err)
+		if ok {
+			switch s.Code() {
+			case codes.PermissionDenied:
+				http.Error(w, err.Error(), http.StatusForbidden)
+			case codes.InvalidArgument:
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			case codes.NotFound:
+				http.Error(w, err.Error(), http.StatusNotFound)
+			default:
+				log.Println(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
+		}
+
+		switch err {
 		case verifiable.ErrInvalidRequest, verifiable.ErrInvalidRange, verifiable.ErrInvalidTreeRange:
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		case verifiable.ErrNotFound:
