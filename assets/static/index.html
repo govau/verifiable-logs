@@ -161,7 +161,7 @@
                     var jsonValue = $("#inclusion_proof_input").val();
                     var asObj = JSON.parse(jsonValue);
                     var objectHash = objectHashWithRedaction(JSON.parse(jsonValue), '');
-                    restCall("ct/v1/get-sth", null, function (sth) {
+                    restCall("ct/v1/get-sth?tree_size=" + Number($("#inclusion_proof_tree_size").val()), null, function (sth) {
                         restCall("ct/v1/get-objecthash?hash=" + encodeURIComponent(btoa(objectHash)), null, function (sct) {
                             var mtlInput = createRFC6962MerkleTreeLeafFromObjectHash(sct.timestamp, objectHash);
                             var leafHash = leafMerkleTreeHash(mtlInput);
