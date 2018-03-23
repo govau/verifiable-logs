@@ -1,5 +1,7 @@
 # Working with a log
 
+(URL for UI: <http://localhost:8080/dataset/mytable/>)
+
 Let's start by adding a few more entries to our table from before, so back in our `psql` prompt:
 
 ```sql
