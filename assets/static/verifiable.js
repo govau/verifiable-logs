@@ -378,3 +378,180 @@ function Path(m, start_n, end_n) {
 		}
 	}
 }
+
+function decodeHex(s) {
+    var rv = "";
+    for (var i = 0; (i + 1) < s.length; i += 2) {
+        rv += String.fromCharCode(parseInt(s.substring(i, i+2), 16));
+    }
+    return rv;
+}
+
+var normalizeFunction = null;
+if (typeof "foo".normalize === 'function') {
+    normalizeFunction = function(o) {
+        return unescape(encodeURIComponent(o.normalize('NFC')));
+    };
+} else {
+    // Safari does not support normalize() at time of writing (June 2016)
+    console.warn("String.prototype.normalize() not found - will result in incorrect hashes for Unicode values.");
+    normalizeFunction = function(o) {
+        return o;
+    };
+}
+
+function objectHashWithRedaction(o, prefix) {
+	if (o == null) {
+		return sha256('n');
+	} else if (o instanceof Array) {
+		var input = "";
+		for (var i = 0; i < o.length; i++) {
+			input += objectHashWithRedaction(o[i], prefix);
+		}
+		return sha256('l' + input);
+	} else if ((typeof o) == "string") {
+		if (prefix.length > 0 && o.startsWith(prefix)) {
+			return decodeHex(o.substring(prefix.length));
+		} else {
+			return sha256('u' + normalizeFunction(o));
+		}
+	} else if ((typeof o) == "number") { // we assume everything is a float (json doesn't distinguish)
+		if (o == 0.0) { // special case 0
+			return sha256('f+0:');
+		}
+		var s = "+";
+		if (o < 0) {
+			s = "-";
+			o = -o;
+		}
+		var e = 0;
+		while (o > 1) {
+			o /= 2.0;
+			e++;
+		}
+		while (o <= 0.5) {
+			o *= 2.0;
+			e--;
+		}
+		s += e + ":";
+		if ((o > 1) || (o <= 0.5)) {
+			return undefined;
+		}
+		while (o != 0) {
+			if (o >= 1) {
+				s += "1";
+				o -= 1.0;
+			} else {
+				s += "0";
+			}
+			if (o >= 1) {
+				return undefined;
+			}
+			if (s.length >= 1000) {
+				return undefined;
+			}
+			o *= 2.0;
+		}
+		return sha256('f' + s);
+	} else if ((typeof o) == "boolean") {
+		return sha256('b' + (o ? "1" : "0"));
+	} else { // object
+		var kh = [];
+		for (var k in o) {
+			kh.push(objectHashWithRedaction(k, prefix) + objectHashWithRedaction(o[k], prefix));
+		}
+		kh.sort();
+		return sha256("d"+kh.join(""));
+	}
+}
+
+function DrawInclusionProof(c, leaf_index, mtlHash, tree_size, tree_hash, proof) {
+	var actualPaths = Path(leaf_index, 0, tree_size);
+	actualPaths.push([leaf_index, leaf_index + 1]);
+	proof = proof.slice(0);
+	proof.push(mtlHash);
+
+	var proofToOrigIndex = {};
+	for (var i = 0; i < actualPaths.length; i++) {
+		proofToOrigIndex[proof[i]] = i;
+	}
+	var sortedProofs = proof.slice(0);
+	sortedProofs.sort(function (a, b) {
+		return actualPaths[proofToOrigIndex[a]][0] - actualPaths[proofToOrigIndex[b]][0];
+	});
+
+	var proofToUIIndex = {};
+	for (var i = 0; i < sortedProofs.length; i++) {
+		proofToUIIndex[sortedProofs[i]] = i + 0.5;
+	}
+
+
+	// Now we know width and height...
+	var desWidth = NODE_WIDTH * proof.length;
+	var desHeight = proof.length * NODE_HEIGHT;
+
+	var canvas = c[0];
+
+	R = window.devicePixelRatio;
+
+	canvas.width = R * desWidth;
+	canvas.height = R * desHeight;
+
+	c.css({
+		width: desWidth,
+		height: desHeight,
+	});
+
+	ctx = canvas.getContext("2d");
+	ctx.scale(R, R);
+
+	ctx.translate(0, (proof.length - 1) * NODE_HEIGHT);
+
+	ctx.save();
+
+	ctx.setLineDash([3, 3]);
+	ctx.beginPath();
+	ctx.moveTo(0, 0.5 * NODE_HEIGHT);
+	ctx.lineTo(NODE_WIDTH * proof.length, 0.5 * NODE_HEIGHT);
+	ctx.stroke();
+
+	ctx.restore();
+
+
+
+	var fn = leaf_index;
+	var sn = tree_size - 1;
+	var r = mtlHash;
+	var x = proofToUIIndex[mtlHash];
+	var y = 0;
+
+	for (var i = 0; i < (proof.length - 1); i++) {
+		var ourUIIndex = proofToUIIndex[proof[i]];
+		if (lsb(fn) || (fn == sn)) {
+			r = nodeMerkleTreeHash(proof[i], r);
+			DrawNodeResult(ctx, ourUIIndex, 0, x, y, r, null, (r == tree_hash) ? "tree_hash" : "calculated", false);
+			x = (ourUIIndex + x) / 2.0;
+			y += 1;
+
+			while (!(lsb(fn) || (fn == 0))) {
+				fn >>= 1;
+				sn >>= 1;
+			}
+		} else {
+			r = nodeMerkleTreeHash(r, proof[i]);
+			DrawNodeResult(ctx, x, y, ourUIIndex, 0, r, null, (r == tree_hash) ? "tree_hash" : "calculated", false);
+			x = (ourUIIndex + x) / 2.0;
+			y += 1;
+		}
+		fn >>= 1;
+		sn >>= 1;
+	}
+
+	for (var i = 0; i < sortedProofs.length; i++) {
+		ctx.save();
+		ctx.translate(i * NODE_WIDTH, 0);
+		DrawHashBox(ctx, sortedProofs[i], actualPaths[proofToOrigIndex[sortedProofs[i]]], (sortedProofs[i] == mtlHash) ? "leaf_input" : "inclusion");
+		ctx.restore();
+	}
+
+}

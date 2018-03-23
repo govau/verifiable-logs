@@ -26,6 +26,35 @@
                 "leaf_input": "#48C9B0",
             };
 
+            function createRFC6962MerkleTreeLeafFromObjectHash(timestamp, objectHash) {
+                // version 0x00
+                // MerkleLeafType 0x00
+                // Timestamp - big-endian, 8 bytes
+                // LogEntryType - 0x0801
+                // Object hash : 32 bytes
+                // Extensions: 0x0000
+
+                var rv = new Uint8Array(1+1+8+2+32+2); // docs claim inited to 0
+
+                // Set timestamp
+                var curTS = timestamp
+                for (var i = 7; i >= 0; i--) {
+                    rv[1+1+i] = curTS % 256;
+                    curTS = (curTS - (curTS % 256)) / 256; // because >> 8 doesn't work for big numbers in Javascript??
+                }
+
+                // Set LogEntryType
+                rv[1+1+8] = 0x80;
+                rv[1+1+8+1] = 0x01;
+
+                // Copy object hash
+                for (var i = 0; i < 32; i++) {
+                    rv[1+1+8+2+i] = objectHash.charCodeAt(i);
+                }
+
+                return binaryArrayToString(rv);
+            }
+
             function restCall(path, data, success, failure) {
                 var req = new XMLHttpRequest();
                 req.onload = function (evt) {
@@ -57,8 +86,6 @@
 
             function doGetEntries(first, lastExclusive) {
                 restCall("ct/v1/get-entries?start=" + first + "&end=" + (lastExclusive - 1), null, function (result) {
-                    console.log(result);
-
                     var s = "";
                     for (var i = 0; i < result.entries.length; i++) {
                         s += atob(result.entries[i].extra_data) + "\n";
@@ -78,7 +105,6 @@
             $(function () {
                 $("#get_sth").click(function () {
                     restCall("ct/v1/get-sth?tree_size=" + Number($("#get_sth_tree_size").val()), null, function (result) {
-                        console.log(result);
                         var s = "";
                         s += "tree size: " + result.tree_size + "\n";
                         s += "root hash: " + result.sha256_root_hash + "\n";
@@ -92,8 +118,6 @@
                     restCall("ct/v1/get-sth?tree_size=" + Number($("#get_consistency_first").val()), null, function (first) {
                         restCall("ct/v1/get-sth?tree_size=" + Number($("#get_consistency_second").val()), null, function (second) {
                             restCall("ct/v1/get-sth-consistency?first=" + Number(first.tree_size) + "&second=" + Number(second.tree_size), null, function (result) {
-                                console.log(result);
-
                                 var s = "";
                                 s += "first tree size: " + first.tree_size + "\n";
                                 s += "first root hash: " + first.sha256_root_hash + "\n";
@@ -117,7 +141,7 @@
                             $("#get_consistency_result").text("error: " + reason);
                         });
                     }, function (reason) {
-                            $("#get_consistency_result").text("error: " + reason);
+                        $("#get_consistency_result").text("error: " + reason);
                     });
                     return false;
                 });
@@ -132,6 +156,41 @@
                     }  else {
                         doGetEntries(Number($("#get_entries_first").val()), last);
                     }
+                });
+                $("#inclusion_proof").click(function () {
+                    var jsonValue = $("#inclusion_proof_input").val();
+                    var asObj = JSON.parse(jsonValue);
+                    var objectHash = objectHashWithRedaction(JSON.parse(jsonValue), '');
+                    restCall("ct/v1/get-sth", null, function (sth) {
+                        restCall("ct/v1/get-objecthash?hash=" + encodeURIComponent(btoa(objectHash)), null, function (sct) {
+                            var mtlInput = createRFC6962MerkleTreeLeafFromObjectHash(sct.timestamp, objectHash);
+                            var leafHash = leafMerkleTreeHash(mtlInput);
+                            restCall("ct/v1/get-proof-by-hash?hash=" + encodeURIComponent(btoa(leafHash)) + "&tree_size=" + sth.tree_size, null, function (inclusionProof) {
+                                var s = "";
+                                s += "calculated object hash: " + btoa(objectHash) + "\n";
+                                s += "retrieved sct timestamp: " + sct.timestamp + "\n";
+                                s += "calculated merkle tree leaf hash: " + btoa(leafHash) + "\n";
+                                s += "\n";
+                                s += "leaf index: " + inclusionProof.leaf_index + "\n";
+                                s += "tree size: " + sth.tree_size + "\n";
+                                s += "\n";
+                                s += "inclusion audit path:\n\n";
+                                for (var i = 0; i < inclusionProof.audit_path.length; i++) {
+                                    s += inclusionProof.audit_path[i] + "\n";
+                                }
+
+                                $("#inclusion_proof_result").text(s);
+
+                                DrawInclusionProof($("#inclusion_proof_diagram"), inclusionProof.leaf_index, leafHash, sth.tree_size, atob(sth.sha256_root_hash), array_atob(inclusionProof.audit_path));
+                            }, function (reason) {
+                                $("#inclusion_proof_result").text("error: " + reason);
+                            });
+                        }, function (reason) {
+                            $("#inclusion_proof_result").text("error: " + reason);
+                        });
+                    }, function (reason) {
+                        $("#inclusion_proof_result").text("error: " + reason);
+                    });
                 });
             });
         </script>
@@ -154,7 +213,7 @@
         </div>
         <div>
             <hr />
-            <h2>Proove consistency</h2>
+            <h2>Prove consistency</h2>
             <p>This operation shows the append-only property of the log.</p>
             <p>
                 First size (must be greater than 0):
@@ -186,5 +245,23 @@
             <pre id="get_entries_result"></pre>
             <canvas id="get_entries_diagram" />
         </div>
+        <div>
+            <hr />
+            <h2>Prove inclusion</h2>
+            <p>This operation shows proof of inclusion of an entry in the log.</p>
+            <p>
+                Tree size (leave blank for latest):
+                <input type="text" id="inclusion_proof_tree_size" />
+                <br />
+                Entry (JSON):
+                <br />
+                <textarea id="inclusion_proof_input" rows="4" cols="72">{"hint": "copy a value from fetch entries"}</textarea>
+                <br />
+                [ <a href="#" id="inclusion_proof">Fetch and show inclusion proof</a> ]
+            </p>
+            <p>Result:</p>
+            <pre id="inclusion_proof_result"></pre>
+            <canvas id="inclusion_proof_diagram" />
+        </div> 
     </body>
 </html>
