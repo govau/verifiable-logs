@@ -465,6 +465,20 @@ function objectHashWithRedaction(o, prefix) {
 	}
 }
 
+function DrawNoResult(ctx, leftX, leftY, inverted) {
+	var f = inverted ? 1 : -1;
+
+	ctx.save();
+	ctx.translate(0, NODE_HEIGHT * 0.5); // so that we are on the centreline
+
+	ctx.beginPath();
+	ctx.moveTo(leftX * NODE_WIDTH, f * ((leftY * NODE_HEIGHT) + (leftY == 0 ? NODE_OFFSET*2 : NODE_BIG_OFFSET)));
+	ctx.lineTo(leftX * NODE_WIDTH, f * (1.5 + leftY) * NODE_HEIGHT);
+	ctx.stroke();
+
+	ctx.restore();
+}
+
 function DrawInclusionProof(c, leaf_index, mtlHash, tree_size, tree_hash, proof) {
 	var actualPaths = Path(leaf_index, 0, tree_size);
 	actualPaths.push([leaf_index, leaf_index + 1]);

@@ -55,6 +55,13 @@ docker exec ckan /usr/local/bin/ckan-paster --plugin=ckan datastore set-permissi
 # Restart CKAN
 docker-compose restart ckan
 
+# Create admin account
+yes | docker exec -i ckan /usr/local/bin/ckan-paster --plugin=ckan sysadmin -c /etc/ckan/production.ini add admin password=l0ngs3cr3t email=user@example.com
+```
+
+## Add table to CKAN
+
+```bash
 # Add que_jobs table to database
 docker exec -i db psql -U ckan datastore <<EOF
 CREATE TABLE IF NOT EXISTS que_jobs (
@@ -66,13 +73,9 @@ CREATE TABLE IF NOT EXISTS que_jobs (
     error_count integer     NOT NULL DEFAULT 0,
     last_error  text,
     queue       text        NOT NULL DEFAULT '',
-    _full_text  text        DEFAULT 'TODO fix, this is ignored but here so as to not interfere with zfulltext',
     CONSTRAINT que_jobs_pkey PRIMARY KEY (queue, priority, run_at, job_id)
 );
 EOF
-
-# Create admin account
-docker exec -it ckan /usr/local/bin/ckan-paster --plugin=ckan sysadmin -c /etc/ckan/production.ini add admin
 ```
 
 ## Run log server
@@ -230,7 +233,7 @@ curl -H "Content-Type: application/json" -d "$D" -H "Authorization: ${CKAN_KEY}"
 
 Watch in CKAN: <http://localhost:5000/dashboard/>
 
-Watch on log server: <http://localhost:5000/dataset/${CKAN_RESOURCE}/>
+Watch on log server: <http://localhost:8080/dataset/${CKAN_RESOURCE}/>
 
 
 ## Clean up
