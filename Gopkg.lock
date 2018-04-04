@@ -79,6 +79,15 @@
   version = "v1.6.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/govau/certwatch"
+  packages = [
+    "db",
+    "jobs"
+  ]
+  revision = "5c1e87f870b059210f51bd361671e49f9e51ccd1"
+
+[[projects]]
   name = "github.com/govau/cf-common"
   packages = ["env"]
   revision = "dd26b329a4c3e57e839e005a9a7b5e1374e075a8"
@@ -199,6 +208,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "994c240f1398fa296bb3d7bfd1a52abf3bea7e1375993012aaa47febad6fb384"
+  inputs-digest = "eb7c4c5a382b5a636f09f0e87ae983376d33e4cf397c3f09995f46b0015f26e8"
   solver-name = "gps-cdcl"
   solver-version = 1

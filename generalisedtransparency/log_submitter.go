@@ -33,19 +33,29 @@ type LogSubmitter struct {
 	logClients     map[string]*LogClient
 }
 
-// SubmitToLogAndUpdateRecord submits the given data to a verifiable log,
-// then updates the original record if it hasn't been changed since.
-// If the SCT was already set correctly for the record, nothing is submitted.
-// As such, it is OK if running this triggers itself again.
-func (h *LogSubmitter) SubmitToLogAndUpdateRecord(ctx context.Context, tableName string, dataToSubmit map[string]interface{}, conn *pgx.Conn) error {
+// Converts JSON number to an integer
+func JSONIntID(val interface{}) (int, error) {
 	// Since this data comes from JSON normally, it is braindead regarding integers
-	idAsFloat, ok := dataToSubmit["_id"].(float64)
+	idAsFloat, ok := val.(float64)
 	if !ok {
-		return errors.New("no primary found for object")
+		return 0, errors.New("expected float64")
 	}
 	id := int(idAsFloat)
 	if (idAsFloat - float64(id)) != 0.0 {
-		return errors.New("json (which cannot represent an integer) has defeated us")
+		return 0, errors.New("json (which cannot represent an integer) has defeated us")
+	}
+	return id, nil
+}
+
+// SubmitToLogAndUpdateRecord submits the given data to a verifiable log,
+// then updates the original record if it hasn't been changed since.
+// If conn is nil, then we do not attempt to update a database, we just submit to the log.
+// If the SCT was already set correctly for the record, nothing is submitted.
+// As such, it is OK if running this triggers itself again.
+func (h *LogSubmitter) SubmitToLogAndUpdateRecord(ctx context.Context, tableName string, dataToSubmit map[string]interface{}, conn *pgx.Conn) error {
+	id, err := JSONIntID(dataToSubmit["_id"])
+	if err != nil {
+		return err
 	}
 
 	dataToSend, oh, err := filterAndHash(dataToSubmit)
@@ -73,6 +83,12 @@ func (h *LogSubmitter) SubmitToLogAndUpdateRecord(ctx context.Context, tableName
 	sct, err := logClient.AddObjectHash(ctx, oh, dataToSend)
 	if err != nil {
 		return err
+	}
+
+	// If conn is nil, then we are done, we will not attempt to
+	// save into our database (we might not have one!)
+	if conn == nil {
+		return nil
 	}
 
 	tlsEncode, err := tls.Marshal(*sct)
