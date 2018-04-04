@@ -35,7 +35,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	tableValidator, err := generalisedtransparency.CreateNamedValidator(os.Getenv("VERIFIABLE_TABLENAME_VALIDATOR"), os.Getenv("VERIFIABLE_TABLENAME_VALIDATOR_PARAM"))
+	tableValidator, err := generalisedtransparency.CreateNamedValidator(envLookup.MustString("VERIFIABLE_TABLENAME_VALIDATOR"), envLookup.String("VERIFIABLE_TABLENAME_VALIDATOR_PARAM", ""))
 	if err != nil {
 		log.Fatal(err)
 	}

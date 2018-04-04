@@ -55,8 +55,8 @@ Build and push:
 dep ensure
 
 # Build
-GOOS=linux GOARCH=amd64 go build -o deploy/verifiable-logs-server/verifiable-logs-server cmd/verifiable-logs-server/main-verifiable-log.go
+GOOS=linux GOARCH=amd64 go build -o deploy/verifiable-logs-server/verifiable-logs-server cmd/verifiable-logs-server/main-verifiable-logs-server.go
 
 # Push
-cf push -f deploy/verifiable-log/manifest.yml -p deploy/verifiable-log
+cf push -f deploy/verifiable-logs-server/manifest.yml -p deploy/verifiable-logs-server
 ```
