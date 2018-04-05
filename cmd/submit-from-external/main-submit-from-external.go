@@ -31,6 +31,11 @@ type resource struct {
 	Resource string `json:"resource"`
 }
 
+type submitRecord struct {
+	Table string                 `json:"table"`
+	Data  map[string]interface{} `json:"data"`
+}
+
 func main() {
 	app, err := cfenv.Current()
 	if err != nil {
@@ -49,6 +54,35 @@ func main() {
 	baseURL := envLookup.String("CKAN_BASE_URL", "https://data.gov.au")
 	resourceIDs := strings.Split(envLookup.String("CKAN_RESOURCE_ID", ""), ",")
 
+	qc := que.NewClient(pgxPool)
+
+	tx, err := pgxPool.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tx.Rollback()
+
+	for _, rid := range resourceIDs {
+		bb, err := json.Marshal(&resource{
+			Resource: rid,
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = qc.EnqueueInTx(&que.Job{
+			Type:  "fetch_entry_metadata",
+			Args:  bb,
+			RunAt: time.Now(),
+		}, tx)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	tableValidator, err := generalisedtransparency.CreateNamedValidator("whitelist", strings.Join(resourceIDs, ","))
 	if err != nil {
 		log.Fatal(err)
@@ -60,7 +94,6 @@ func main() {
 		TableNameValidator: tableValidator,
 	}
 
-	qc := que.NewClient(pgxPool)
 	workers := que.NewWorkerPool(qc, que.WorkMap{
 		"fetch_entry_metadata": (&jobs.JobFuncWrapper{
 			QC:     qc,
@@ -78,12 +111,16 @@ func main() {
 				}
 
 				var lastID int
-				err = tx.QueryRow(`SELECT last_id FROM processed_ids WHERE resource = $1`, tName).Scan(&lastID)
+				err = tx.QueryRow(`SELECT last_id FROM processed_ids WHERE resource = $1 FOR UPDATE`, tName).Scan(&lastID)
 				switch err {
 				case nil:
 					// continue
 				case pgx.ErrNoRows:
-					lastID = 0
+					_, err = tx.Exec("INSERT INTO processed_ids(resource, last_id) VALUES ($1, $2)", tName, 0)
+					if err != nil {
+						return err
+					}
+					return jobs.ErrImmediateReschedule
 				default:
 					return err
 				}
@@ -111,8 +148,28 @@ func main() {
 					return err
 				}
 
+				if len(jsonResp.Result.Records) == 0 {
+					return nil
+				}
+
 				for _, dataToSubmit := range jsonResp.Result.Records {
 					id, err := generalisedtransparency.JSONIntID(dataToSubmit["_id"])
+					if err != nil {
+						return err
+					}
+
+					bb, err := json.Marshal(&submitRecord{
+						Table: tName,
+						Data:  dataToSubmit,
+					})
+					if err != nil {
+						return err
+					}
+
+					err = qc.EnqueueInTx(&que.Job{
+						Type: "update_sct",
+						Args: bb,
+					}, tx)
 					if err != nil {
 						return err
 					}
@@ -129,16 +186,13 @@ func main() {
 				return tx.Commit()
 			},
 			Singleton: true,
-			Duration:  time.Hour * 5,
+			Duration:  time.Minute * 5,
 		}).Run,
 		"update_sct": (&jobs.JobFuncWrapper{
 			QC:     qc,
 			Logger: log.New(os.Stderr, "", log.LstdFlags),
 			F: func(qc *que.Client, logger *log.Logger, job *que.Job, tx *pgx.Tx) error {
-				var jd struct {
-					Table string                 `json:"table"`
-					Data  map[string]interface{} `json:"data"`
-				}
+				var jd submitRecord
 				err := json.Unmarshal(job.Args, &jd)
 				if err != nil {
 					return err
@@ -170,23 +224,6 @@ func main() {
 	}()
 
 	go workers.Start()
-
-	for _, rid := range resourceIDs {
-		bb, err := json.Marshal(&resource{
-			Resource: rid,
-		})
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = qc.Enqueue(&que.Job{
-			Type:  "fetch_entry_metadata",
-			Args:  bb,
-			RunAt: time.Now(),
-		})
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
 
 	log.Println("Started up... waiting for ctrl-C.")
 
