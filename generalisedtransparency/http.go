@@ -31,6 +31,7 @@ func (cts *Server) CreateRESTHandler() http.Handler {
 	r.HandleFunc("/dataset/{logname}/", cts.staticHandler("text/html", "index.html"))
 	r.HandleFunc("/verifiable.js", cts.staticHandler("application/javascript", "verifiable.js"))
 	r.HandleFunc("/sha256.js", cts.staticHandler("application/javascript", "sha256.js"))
+	r.HandleFunc("/", cts.staticHandler("text/html", "root.html"))
 
 	// Convenience redirect
 	r.HandleFunc("/dataset/{logname}", func(w http.ResponseWriter, r *http.Request) {

@@ -52,7 +52,7 @@ func main() {
 	)
 
 	baseURL := envLookup.String("CKAN_BASE_URL", "https://data.gov.au")
-	resourceIDs := strings.Split(envLookup.String("CKAN_RESOURCE_ID", ""), ",")
+	resourceIDs := strings.Split(envLookup.String("CKAN_RESOURCE_IDS", ""), ",")
 
 	tableValidator, err := generalisedtransparency.CreateNamedValidator("whitelist", strings.Join(resourceIDs, ","))
 	if err != nil {
@@ -84,9 +84,10 @@ func main() {
 			if err != nil {
 				return err
 			}
-			go log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("PORT")), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			go http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("PORT")), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprintf(w, "HEALTHY")
-			})))
+			}))
+			log.Println("Server up...")
 			return nil
 		},
 		WorkerMap: map[string]*jobs.JobConfig{
@@ -274,7 +275,7 @@ func fetchEntryMetadata(qc *que.Client, logger *log.Logger, job *que.Job, tx *pg
 
 	// Go out and search
 	resp, err := http.Get(baseURL + "/api/3/action/datastore_search_sql?" + (&url.Values{
-		"sql": []string{fmt.Sprintf(`SELECT MAX(_id) FROM "%s"`, tName)},
+		"sql": []string{fmt.Sprintf(`SELECT MAX(_id) AS max_id FROM "%s"`, tName)},
 	}).Encode())
 	if err != nil {
 		return err
@@ -288,10 +289,11 @@ func fetchEntryMetadata(qc *que.Client, logger *log.Logger, job *que.Job, tx *pg
 	var jsonResp struct {
 		Result struct {
 			Records []struct {
-				ID int `json:"_id"`
+				ID int `json:"max_id"`
 			} `json:"records"`
 		} `json:"result"`
 	}
+
 	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
 	if err != nil {
 		return err

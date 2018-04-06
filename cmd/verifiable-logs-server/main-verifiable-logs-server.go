@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	cfenv "github.com/cloudfoundry-community/go-cfenv"
@@ -31,8 +32,13 @@ func main() {
 		env.WithUPSLookup(app, "verifiablelogs-ups"),
 	)
 
+	dbConnCount, err := strconv.Atoi(envLookup.String("DB_CONNECTIONS", "2"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	pgxPool, err := pgx.NewConnPool(pgx.ConnPoolConfig{
-		MaxConnections: 2,
+		MaxConnections: dbConnCount,
 		ConnConfig:     *jobs.MustPGXConfigFromCloudFoundry(),
 	})
 	if err != nil {
