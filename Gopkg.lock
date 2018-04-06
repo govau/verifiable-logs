@@ -80,18 +80,12 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/govau/certwatch"
+  name = "github.com/govau/cf-common"
   packages = [
-    "db",
+    "env",
     "jobs"
   ]
-  revision = "5c1e87f870b059210f51bd361671e49f9e51ccd1"
-
-[[projects]]
-  name = "github.com/govau/cf-common"
-  packages = ["env"]
-  revision = "dd26b329a4c3e57e839e005a9a7b5e1374e075a8"
-  version = "v0.0.3"
+  revision = "2a3c13c3e85e5fdd50721c7be21aa44f19143022"
 
 [[projects]]
   name = "github.com/jackc/pgx"
@@ -208,6 +202,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "eb7c4c5a382b5a636f09f0e87ae983376d33e4cf397c3f09995f46b0015f26e8"
+  inputs-digest = "18f89d6d5536728894c414265eddd2d42f193be4dc6c3075fba87abb6dadf59d"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -10,12 +10,13 @@ import (
 
 	cfenv "github.com/cloudfoundry-community/go-cfenv"
 	"github.com/continusec/verifiabledatastructures/pb"
+	"github.com/jackc/pgx"
 
 	"github.com/continusec/verifiabledatastructures/mutator/instant"
 	"github.com/continusec/verifiabledatastructures/oracle/policy"
 	"github.com/continusec/verifiabledatastructures/verifiable"
 	"github.com/govau/cf-common/env"
-	"github.com/govau/verifiable-logs/db"
+	"github.com/govau/cf-common/jobs"
 	"github.com/govau/verifiable-logs/generalisedtransparency"
 	"github.com/govau/verifiable-logs/postgres"
 )
@@ -30,7 +31,10 @@ func main() {
 		env.WithUPSLookup(app, "verifiablelogs-ups"),
 	)
 
-	pgxPool, err := db.GetPGXPool(2)
+	pgxPool, err := pgx.NewConnPool(pgx.ConnPoolConfig{
+		MaxConnections: 2,
+		ConnConfig:     *jobs.MustPGXConfigFromCloudFoundry(),
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
