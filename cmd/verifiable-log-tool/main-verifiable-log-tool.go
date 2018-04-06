@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"flag"
 	"log"
 	"os"
@@ -53,45 +52,58 @@ func main() {
 			log.Fatal(err)
 		}
 
-		entries, err := reader.GetEntries(context.Background(), 0, int64(sth.TreeSize)-1)
-		if err != nil {
-			log.Fatal(err)
-		}
-
 		// Verify STH using https://tools.ietf.org/html/draft-ietf-trans-rfc6962-bis-28#section-2.1.2
 		var stack [][sha256.Size]byte
-		for idx, entry := range entries {
-			leafData, err := tls.Marshal(entry.Leaf)
+
+		numberHandled := uint64(0)
+		keys := make(map[string]bool)
+		for numberHandled < sth.TreeSize {
+			entries, err := reader.GetEntries(context.Background(), int64(numberHandled), int64(sth.TreeSize)-1)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			stack = append(stack, sha256.Sum256(append([]byte{0}, leafData...)))
-			for i := idx; (i % 2) == 1; i >>= 1 {
-				stack = append(stack[:len(stack)-2], sha256.Sum256(append(append([]byte{1}, stack[len(stack)-2][:]...), stack[len(stack)-1][:]...)))
-			}
+			for _, entry := range entries {
+				leafData, err := tls.Marshal(entry.Leaf)
+				if err != nil {
+					log.Fatal(err)
+				}
 
-			// Verify the object hash
-			if entry.Leaf.TimestampedEntry.EntryType != ct.XObjectHashLogEntryType {
-				log.Fatal("log entry not of type object hash")
-			}
-			//log.Println("verified object hash for entry matches that in leaf")
+				stack = append(stack, sha256.Sum256(append([]byte{0}, leafData...)))
+				for i := numberHandled; (i % 2) == 1; i >>= 1 {
+					stack = append(stack[:len(stack)-2], sha256.Sum256(append(append([]byte{1}, stack[len(stack)-2][:]...), stack[len(stack)-1][:]...)))
+				}
 
-			expectedObjectHash, err := objecthash.ObjectHash(entry.ObjectData)
-			if err != nil {
-				log.Fatal(err)
-			}
+				// Verify the object hash
+				if entry.Leaf.TimestampedEntry.EntryType != ct.XObjectHashLogEntryType {
+					log.Fatal("log entry not of type object hash")
+				}
+				//log.Println("verified object hash for entry matches that in leaf")
 
-			if expectedObjectHash != entry.ObjectHash {
-				log.Fatal("wrong object hash for data")
-			}
+				expectedObjectHash, err := objecthash.ObjectHash(entry.ObjectData)
+				if err != nil {
+					log.Fatal(err)
+				}
 
-			dataAsText, err := json.Marshal(entry.ObjectData)
-			if err != nil {
-				log.Fatal(err)
-			}
+				if expectedObjectHash != entry.ObjectHash {
+					log.Fatal("wrong object hash for data")
+				}
 
-			log.Printf("#%d: %s\n", idx, dataAsText)
+				// dataAsText, err := json.Marshal(entry.ObjectData)
+				// if err != nil {
+				// 	log.Fatal(err)
+				// }
+
+				// log.Printf("#%d: %s\n", idx, dataAsText[:40])
+				_, ok := keys[entry.ObjectData["key"].(string)]
+				if ok {
+					log.Println("duplicate:", entry.ObjectData["key"], numberHandled)
+				} else {
+					keys[entry.ObjectData["key"].(string)] = true
+				}
+
+				numberHandled++
+			}
 		}
 
 		for len(stack) != 1 {
@@ -102,7 +114,7 @@ func main() {
 			log.Fatalf("received root hash: %s, calculated root hash: %s\n", sth.SHA256RootHash.Base64String(), ct.SHA256Hash(stack[0]).Base64String())
 		}
 
-		//log.Println("verified root hash in sth matches that calculated by get-entries")
+		log.Println("verified root hash in sth matches that calculated by get-entries")
 
 	default:
 		log.Println("unrecognized action")
