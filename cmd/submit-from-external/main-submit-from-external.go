@@ -48,7 +48,7 @@ func main() {
 	}
 	envLookup := env.NewVarSet(
 		env.WithOSLookup(), // Always look in the OS env first.
-		env.WithUPSLookup(app, "submit-external-ups"),
+		env.WithUPSLookup(app, "verifiablesubmitter-ups"),
 	)
 
 	baseURL := envLookup.String("CKAN_BASE_URL", "https://data.gov.au")

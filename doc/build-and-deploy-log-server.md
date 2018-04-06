@@ -45,7 +45,7 @@ The following assumes a CloudFoundry installation:
 cf create-service postgres shared verifiablelogs-db
 
 # Create a secret used for authn/authz for adding log entries
-cf create-user-provided-service verifiablelogs-ups -p '{"VDB_SECRET":"secret"}'
+cf create-user-provided-service verifiablelogs-ups -p '{"VDB_SECRET":"secret","DB_CONNECTIONS":"20","VERIFIABLE_TABLENAME_VALIDATOR":"uuid"}'
 ```
 
 Build and push:
