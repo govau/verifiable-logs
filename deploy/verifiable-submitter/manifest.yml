@@ -1,0 +1,9 @@
+buildpack: binary_buildpack
+memory: 350M
+disk_quota: 50M
+instances: 2
+services:
+- verifiablesubmitter-db
+- verifiablesubmitter-ups
+applications:
+- name: verifiable-submitter

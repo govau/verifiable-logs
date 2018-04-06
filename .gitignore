@@ -1,2 +1,3 @@
 vendor/
 deploy/verifiable-logs-server/verifiable-logs-server
+deploy/verifiable-submitter/submit-from-external
