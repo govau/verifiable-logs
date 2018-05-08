@@ -86,7 +86,7 @@ func assetsStaticIndexHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "assets/static/index.html", size: 12669, mode: os.FileMode(420), modTime: time.Unix(1522115732, 0)}
+	info := bindataFileInfo{name: "assets/static/index.html", size: 12669, mode: os.FileMode(420), modTime: time.Unix(1525766514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -106,7 +106,7 @@ func assetsStaticRootHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "assets/static/root.html", size: 369, mode: os.FileMode(420), modTime: time.Unix(1522988529, 0)}
+	info := bindataFileInfo{name: "assets/static/root.html", size: 369, mode: os.FileMode(420), modTime: time.Unix(1525766514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -126,7 +126,7 @@ func assetsStaticSha256Js() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "assets/static/sha256.js", size: 8362, mode: os.FileMode(420), modTime: time.Unix(1521768153, 0)}
+	info := bindataFileInfo{name: "assets/static/sha256.js", size: 8362, mode: os.FileMode(420), modTime: time.Unix(1525766514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -146,7 +146,7 @@ func assetsStaticVerifiableJs() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "assets/static/verifiable.js", size: 15434, mode: os.FileMode(420), modTime: time.Unix(1522115543, 0)}
+	info := bindataFileInfo{name: "assets/static/verifiable.js", size: 15434, mode: os.FileMode(420), modTime: time.Unix(1525766514, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
