@@ -1,0 +1,25 @@
+.page-wrapper {
+    padding:30px;
+    border: solid #80808087 3px;
+    background-color: #e4e4e48c;
+}
+
+.au-text-input{
+    margin-bottom: 15px !important;
+    /* display: block !important; */
+}
+
+.section-heading {
+    margin-left: -12px !important;
+    margin-top: -10px !important;
+}
+
+hr {
+    margin-left: -12px;
+    border-width: 3px !important;
+    border-color:#195E6F !important;
+}
+
+header {
+    text-align: center;
+}

@@ -1,267 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
-        <script type="text/javascript" src="../../sha256.js"></script>
-        <script type="text/javascript" src="../../verifiable.js"></script>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="./js/furnace.min.js"></script>
+    <link rel="stylesheet" href="./css/furnace.min.css">
+    <link rel="stylesheet" href="./css/stylesheet.css">
 
-        <style type="text/css">
-        </style>
+    <script type="text/javascript" src="../../sha256.js"></script>
+    <script type="text/javascript" src="../../verifiable.js"></script>
+    <script src="./script.js"></script>
+    <style type="text/css">
+    </style>
+</head>
 
-        <script type="text/javascript">
-            NODE_WIDTH = 320;
-            NODE_HEIGHT = 60;
-            NODE_OFFSET = 10;
-            NODE_BIG_OFFSET = 15;
-            COLORS = {
-                "consistency": "LightCoral",
-                "inclusion": "LightCoral",
-                "calculated": "DarkKhaki",
-                "first_hash": "ALICEBLUE",
-                "second_hash": "ALICEBLUE",
-                "tree_hash": "ALICEBLUE",
-                "leaf_input": "#48C9B0",
-            };
+<body>
 
-            function createRFC6962MerkleTreeLeafFromObjectHash(timestamp, objectHash) {
-                // version 0x00
-                // MerkleLeafType 0x00
-                // Timestamp - big-endian, 8 bytes
-                // LogEntryType - 0x0801
-                // Object hash : 32 bytes
-                // Extensions: 0x0000
+    <main class="au-grid">
+        <div class="au-body">
+            <div class="container-fluid">
+                <div class="row">
+                    <header class="au-header au-header--hero au-header--dark" role="banner">
+                        <h1 class="au-header-heading">Verifiable Log Viewer</h1>
+                        <span class="au-header-subline">See below for actions you can perform on this verifiable log. </span>
+                    </header>
+                </div>
+            </div>
+            <br>
+            <div class="page-wrapper">           
+                    <h2 class="section-heading">Get Signed Tree Head</h2><br>
+                    <div class="row">
+                        <div class="col-md-4">                            
+                            <p>This operation shows the signed tree head for the log.</p>
+                            <p>
+                                <label for="get_sth_tree_size">Tree size (Leave blank for latest)</label>
+                                <input class="au-text-input" type="text" id="get_sth_tree_size" placeholder="Insert tree size" />
+                                <br />
+                                <a href="#" class="au-cta-link" id="get_sth">Fetch Signed Tree Head</a>
+                            </p>
+                        </div>
+                        <div class="col-md-8">
+                            <p class="au-display-md">Result:</p>
+                            <pre id="get_sth_result"></pre>
+                        </div>
+                    </div>
+                    <hr />
+                    <h2 class="section-heading">Prove consistency</h2><br>                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p>This operation shows the append-only property of the log.</p>
+                            <p>
+                                <label for="get_consistency_first">First size (must be greater than 0):</label>
+                                <input class="au-text-input" type="text" id="get_consistency_first" value="1" />
+                                <br />
+                                <label for="get_consistency_second">Second size (leave blank for latest): </label>
+                                <input class="au-text-input" type="text" id="get_consistency_second" />
+                                <br />
+                                <a href="#" class="au-cta-link" id="get_consistency">Fetch and show consistency proof</a>
+                            </p>
+                        </div>
+                        <div class="col-md-8">
 
-                var rv = new Uint8Array(1+1+8+2+32+2); // docs claim inited to 0
+                            <p class="au-display-md">Result:</p>
+                            <pre id="get_consistency_result"></pre>
+                            <canvas id="get_consistency_diagram" />
+                        </div>
+                    </div>
+                <hr />
+                <h2 class="section-heading">Get Entries</h2><br>                
+                <div class="row">
+                    <div class="col-md-4">
+                        <p>This operation shows the entries in the log.</p>
+                        <p>
+                            <label for="get_entries_first"> First: </label>
+                            <input class="au-text-input" type="text" id="get_entries_first" value="0" />
+                            <br />
+                            <label for="get_entries_second"> End (exclusive, leave blank for all):</label>
+                            <input class="au-text-input" type="text" id="get_entries_second" />
+                            <br /> [
+                            <a href="#" class="au-cta-link" id="get_entries">Fetch entries</a> ]
+                        </p>
+                    </div>
+                    <div class="col-md-8">
+                        <p class="au-display-md">Result:</p>
+                        <pre id="get_entries_result"></pre>
+                        <canvas id="get_entries_diagram" />
+                    </div>
+                </div>
+                <hr/>
+                <div class="row">
+                    <div class="col-md-4">
+                            <h2 class="section-heading">Prove inclusion</h2>
+                        <p>This operation shows proof of inclusion of an entry in the log.</p>
+                        <p>
 
-                // Set timestamp
-                var curTS = timestamp
-                for (var i = 7; i >= 0; i--) {
-                    rv[1+1+i] = curTS % 256;
-                    curTS = (curTS - (curTS % 256)) / 256; // because >> 8 doesn't work for big numbers in Javascript??
-                }
+                            <label for="inclusion_proof_tree_size">Tree size (leave blank for latest):</label>
+                            <input class="au-text-input" type="text" id="inclusion_proof_tree_size" />
+                            <br />
+                            <br />
+                            <label for="inclusion_proof_input">Entry (JSON):</label>
+                            <textarea class="au-text-input" id="inclusion_proof_input" rows="4" cols="72">{"hint": "copy a value from fetch entries"}</textarea>
+                            <br />
+                            <a href="#" class="au-cta-link" id="inclusion_proof">Fetch and show inclusion proof</a>
+                        </p>
+                    </div>
+                    <div class="col-md-8">
 
-                // Set LogEntryType
-                rv[1+1+8] = 0x80;
-                rv[1+1+8+1] = 0x01;
-
-                // Copy object hash
-                for (var i = 0; i < 32; i++) {
-                    rv[1+1+8+2+i] = objectHash.charCodeAt(i);
-                }
-
-                return binaryArrayToString(rv);
-            }
-
-            function restCall(path, data, success, failure) {
-                var req = new XMLHttpRequest();
-                req.onload = function (evt) {
-                    switch (req.status) {
-                    case 200:
-                        var obj = JSON.parse(binaryArrayToString(new Uint8Array(req.response)));
-                        success(obj, req);
-                        break;
-                    case 400:
-                        failure("bad request");
-                        break;
-                    case 403:
-                        failure("unauthorized");
-                        break;
-                    case 404:
-                        failure("not found");
-                        break;
-                    default:
-                        failure("internal error");
-                    }
-                };
-                req.onerror = function (evt) {
-                    failure("network error");
-                };
-                req.open("GET", path, true);
-                req.responseType = "arraybuffer";
-                req.send(data);
-            }
-
-            function doGetEntries(first, lastExclusive) {
-                restCall("ct/v1/get-entries?start=" + first + "&end=" + (lastExclusive - 1), null, function (result) {
-                    var s = "";
-                    for (var i = 0; i < result.entries.length; i++) {
-                        s += atob(result.entries[i].extra_data) + "\n";
-                    }
-
-                    $("#get_entries_result").text(s);
-
-                    /* don't draw if more than 50, since about there hits a 32000 pixel limit for width in Chrome */
-                    if ((result.entries.length <= 50) && (first == 0)) {
-                        DrawTree($("#get_entries_diagram"), first, lastExclusive, leafinput_atob(result.entries));
-                    }
-                }, function (reason) {
-                    $("#get_entries_result").text("error: " + reason);
-                });
-            }
-
-            $(function () {
-                $("#get_sth").click(function () {
-                    restCall("ct/v1/get-sth?tree_size=" + Number($("#get_sth_tree_size").val()), null, function (result) {
-                        var s = "";
-                        s += "tree size: " + result.tree_size + "\n";
-                        s += "root hash: " + result.sha256_root_hash + "\n";
-                        $("#get_sth_result").text(s);
-                    }, function (reason) {
-                        $("#get_sth_result").text("error: " + reason);
-                    });
-                    return false;
-                });
-                $("#get_consistency").click(function () {
-                    restCall("ct/v1/get-sth?tree_size=" + Number($("#get_consistency_first").val()), null, function (first) {
-                        restCall("ct/v1/get-sth?tree_size=" + Number($("#get_consistency_second").val()), null, function (second) {
-                            restCall("ct/v1/get-sth-consistency?first=" + Number(first.tree_size) + "&second=" + Number(second.tree_size), null, function (result) {
-                                var s = "";
-                                s += "first tree size: " + first.tree_size + "\n";
-                                s += "first root hash: " + first.sha256_root_hash + "\n";
-                                s += "\n";
-                                s += "second tree size: " + second.tree_size + "\n";
-                                s += "second root hash: " + second.sha256_root_hash + "\n";
-                                s += "\n";
-
-                                s += "consistency audit path:\n\n";
-                                for (var i = 0; i < result.consistency.length; i++) {
-                                    s += result.consistency[i] + "\n";
-                                }
-
-                                $("#get_consistency_result").text(s);
-
-                                DrawConsistencyProof($("#get_consistency_diagram"), first.tree_size, atob(first.sha256_root_hash), second.tree_size, atob(second.sha256_root_hash), array_atob(result.consistency));
-                            }, function (reason) {
-                                $("#get_consistency_result").text("error: " + reason);
-                            });
-                        }, function (reason) {
-                            $("#get_consistency_result").text("error: " + reason);
-                        });
-                    }, function (reason) {
-                        $("#get_consistency_result").text("error: " + reason);
-                    });
-                    return false;
-                });
-                $("#get_entries").click(function () {
-                    var last = Number($("#get_entries_second").val());
-                    if (last == 0) {
-                        restCall("ct/v1/get-sth", null, function (result) {
-                            doGetEntries(Number($("#get_entries_first").val()), result.tree_size);
-                        }, function (reason) {
-                            $("#get_entries_result").text("error: " + reason);
-                        });
-                    }  else {
-                        doGetEntries(Number($("#get_entries_first").val()), last);
-                    }
-                });
-                $("#inclusion_proof").click(function () {
-                    var jsonValue = $("#inclusion_proof_input").val();
-                    var asObj = JSON.parse(jsonValue);
-                    var objectHash = objectHashWithRedaction(JSON.parse(jsonValue), '');
-                    restCall("ct/v1/get-sth?tree_size=" + Number($("#inclusion_proof_tree_size").val()), null, function (sth) {
-                        restCall("ct/v1/get-objecthash?hash=" + encodeURIComponent(btoa(objectHash)), null, function (sct) {
-                            var mtlInput = createRFC6962MerkleTreeLeafFromObjectHash(sct.timestamp, objectHash);
-                            var leafHash = leafMerkleTreeHash(mtlInput);
-                            restCall("ct/v1/get-proof-by-hash?hash=" + encodeURIComponent(btoa(leafHash)) + "&tree_size=" + sth.tree_size, null, function (inclusionProof) {
-                                var s = "";
-                                s += "calculated object hash: " + btoa(objectHash) + "\n";
-                                s += "retrieved sct timestamp: " + sct.timestamp + "\n";
-                                s += "calculated merkle tree leaf hash: " + btoa(leafHash) + "\n";
-                                s += "\n";
-                                s += "leaf index: " + inclusionProof.leaf_index + "\n";
-                                s += "tree size: " + sth.tree_size + "\n";
-                                s += "\n";
-                                s += "inclusion audit path:\n\n";
-                                for (var i = 0; i < inclusionProof.audit_path.length; i++) {
-                                    s += inclusionProof.audit_path[i] + "\n";
-                                }
-
-                                $("#inclusion_proof_result").text(s);
-
-                                DrawInclusionProof($("#inclusion_proof_diagram"), inclusionProof.leaf_index, leafHash, sth.tree_size, atob(sth.sha256_root_hash), array_atob(inclusionProof.audit_path));
-                            }, function (reason) {
-                                $("#inclusion_proof_result").text("error: " + reason);
-                            });
-                        }, function (reason) {
-                            $("#inclusion_proof_result").text("error: " + reason);
-                        });
-                    }, function (reason) {
-                        $("#inclusion_proof_result").text("error: " + reason);
-                    });
-                });
-            });
-        </script>
-    </head>
-    <body>
-        <h1>Verifiable Log Viewer</h1>
-        <p>See below for actions you can perform on this verifiable log. Note that all of these actions are read-only, feel free to click around without fear of breaking anything.</p>
-        <div>
-            <hr />
-            <h2>Get Signed Tree Head</h2>
-            <p>This operation shows the signed tree head for the log.</p>
-            <p>
-                Tree size (leave blank for latest):
-                <input type="text" id="get_sth_tree_size" />
-                <br />
-                [ <a href="#" id="get_sth">Fetch Signed Tree Head</a> ]
-            </p>
-            <p>Result:</p>
-            <pre id="get_sth_result"></pre>
+                        <p class="au-display-md">Result:</p>
+                        <pre id="inclusion_proof_result"></pre>
+                        <canvas id="inclusion_proof_diagram" />
+                    </div>
+                </div>
+            </div>                
+            </div>
         </div>
-        <div>
-            <hr />
-            <h2>Prove consistency</h2>
-            <p>This operation shows the append-only property of the log.</p>
-            <p>
-                First size (must be greater than 0):
-                <input type="text" id="get_consistency_first" value="1" />
-                <br />
-                Second size (leave blank for latest):
-                <input type="text" id="get_consistency_second" />
-                <br />
-                [ <a href="#" id="get_consistency">Fetch and show consistency proof</a> ]
-            </p>
-            <p>Result:</p>
-            <pre id="get_consistency_result"></pre>
-            <canvas id="get_consistency_diagram" />
         </div>
-        <div>
-            <hr />
-            <h2>Get Entries</h2>
-            <p>This operation shows the entries in the log.</p>
-            <p>
-                First:
-                <input type="text" id="get_entries_first" value="0" />
-                <br />
-                End (exclusive, leave blank for all):
-                <input type="text" id="get_entries_second" />
-                <br />
-                [ <a href="#" id="get_entries">Fetch entries</a> ]
-            </p>
-            <p>Result:</p>
-            <pre id="get_entries_result"></pre>
-            <canvas id="get_entries_diagram" />
-        </div>
-        <div>
-            <hr />
-            <h2>Prove inclusion</h2>
-            <p>This operation shows proof of inclusion of an entry in the log.</p>
-            <p>
-                Tree size (leave blank for latest):
-                <input type="text" id="inclusion_proof_tree_size" />
-                <br />
-                Entry (JSON):
-                <br />
-                <textarea id="inclusion_proof_input" rows="4" cols="72">{"hint": "copy a value from fetch entries"}</textarea>
-                <br />
-                [ <a href="#" id="inclusion_proof">Fetch and show inclusion proof</a> ]
-            </p>
-            <p>Result:</p>
-            <pre id="inclusion_proof_result"></pre>
-            <canvas id="inclusion_proof_diagram" />
-        </div> 
-    </body>
+    </main>
+</body>
+
 </html>
