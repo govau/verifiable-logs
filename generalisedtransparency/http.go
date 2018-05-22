@@ -19,25 +19,25 @@ func (cts *Server) CreateRESTHandler() http.Handler {
 	r := mux.NewRouter()
 
 	// REST API
-	cts.addCallToRouter(r, "/metadata", cts.ReadAPIKey, true, cts.handleMetadata)
-	cts.addCallToRouter(r, "/add-objecthash", cts.WriteAPIKey, false, cts.handleAdd)
-	cts.addCallToRouter(r, "/get-objecthash", cts.ReadAPIKey, true, cts.handleGetObjectHash)
-	cts.addCallToRouter(r, "/get-sth", cts.ReadAPIKey, true, cts.handleSTH)
-	cts.addCallToRouter(r, "/get-sth-consistency", cts.ReadAPIKey, true, cts.handleSTHConsistency)
-	cts.addCallToRouter(r, "/get-proof-by-hash", cts.ReadAPIKey, true, cts.handleProofByHash)
-	cts.addCallToRouter(r, "/get-entries", cts.ReadAPIKey, true, cts.handleGetEntries)
-	cts.addCallToRouter(r, "/get-entry-and-proof", cts.ReadAPIKey, true, cts.handleGetEntryAndProof)
+	cts.addCallToRouter(r, "/metadata", cts.ReadAPIKey, true, "GET", cts.handleMetadata)
+	cts.addCallToRouter(r, "/add-objecthash", cts.WriteAPIKey, false, "POST", cts.handleAdd)
+	cts.addCallToRouter(r, "/get-objecthash", cts.ReadAPIKey, true, "GET", cts.handleGetObjectHash)
+	cts.addCallToRouter(r, "/get-sth", cts.ReadAPIKey, true, "GET", cts.handleSTH)
+	cts.addCallToRouter(r, "/get-sth-consistency", cts.ReadAPIKey, true, "GET", cts.handleSTHConsistency)
+	cts.addCallToRouter(r, "/get-proof-by-hash", cts.ReadAPIKey, true, "GET", cts.handleProofByHash)
+	cts.addCallToRouter(r, "/get-entries", cts.ReadAPIKey, true, "GET", cts.handleGetEntries)
+	cts.addCallToRouter(r, "/get-entry-and-proof", cts.ReadAPIKey, true, "GET", cts.handleGetEntryAndProof)
 
 	// Static
-	r.HandleFunc("/dataset/{logname}/", cts.staticHandler("text/html", "index.html"))
-	r.HandleFunc("/verifiable.js", cts.staticHandler("application/javascript", "verifiable.js"))
-	r.HandleFunc("/sha256.js", cts.staticHandler("application/javascript", "sha256.js"))
-	r.HandleFunc("/", cts.staticHandler("text/html", "root.html"))
+	r.HandleFunc("/dataset/{logname}/", cts.staticHandler("text/html", "index.html")).Methods("GET")
+	r.HandleFunc("/verifiable.js", cts.staticHandler("application/javascript", "verifiable.js")).Methods("GET")
+	r.HandleFunc("/sha256.js", cts.staticHandler("application/javascript", "sha256.js")).Methods("GET")
+	r.HandleFunc("/", cts.staticHandler("text/html", "root.html")).Methods("GET")
 
 	// Convenience redirect
 	r.HandleFunc("/dataset/{logname}", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, r.URL.RequestURI()+"/", http.StatusMovedPermanently)
-	})
+	}).Methods("GET")
 
 	// Make sure we return 200 since handlers below will fall through to us
 	r.HandleFunc("/{thing:.*}", func(w http.ResponseWriter, r *http.Request) {
@@ -124,6 +124,6 @@ func (cts *Server) wrapCall(apiKey string, ensureExists bool, f func(log *verifi
 	}
 }
 
-func (cts *Server) addCallToRouter(r *mux.Router, path, apiKey string, ensureExists bool, f func(log *verifiable.Log, r *http.Request) (interface{}, error)) {
-	r.HandleFunc("/dataset/{logname}/ct/v1"+path, cts.wrapCall(apiKey, ensureExists, f))
+func (cts *Server) addCallToRouter(r *mux.Router, path, apiKey string, ensureExists bool, method string, f func(log *verifiable.Log, r *http.Request) (interface{}, error)) {
+	r.HandleFunc("/dataset/{logname}/ct/v1"+path, cts.wrapCall(apiKey, ensureExists, f)).Methods(method)
 }
