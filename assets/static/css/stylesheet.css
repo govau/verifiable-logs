@@ -1,12 +1,18 @@
 .page-wrapper {
-    padding:30px;
+    padding:30px !important;
     border: solid #80808087 3px;
     background-color: #e4e4e48c;
+    margin-left: 40px !important;
+    margin-right: 40px !important;
+}
+
+body {
+    margin:0px;
 }
 
 .au-text-input{
     margin-bottom: 15px !important;
-    /* display: block !important; */
+
 }
 
 .section-heading {
