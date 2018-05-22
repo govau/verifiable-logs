@@ -83,7 +83,8 @@ function doGetEntries(first, lastExclusive) {
 }
 
 $(function () {
-    $("#get_sth").click(function () {
+    $("#get_sth").click(function (e) {
+        e.preventDefault();
         restCall("ct/v1/get-sth?tree_size=" + Number($("#get_sth_tree_size").val()), null, function (result) {
             var s = "";
             s += "tree size: " + result.tree_size + "\n";
@@ -94,7 +95,8 @@ $(function () {
         });
         return false;
     });
-    $("#get_consistency").click(function () {
+    $("#get_consistency").click(function (e) {
+        e.preventDefault();        
         restCall("ct/v1/get-sth?tree_size=" + Number($("#get_consistency_first").val()), null, function (first) {
             restCall("ct/v1/get-sth?tree_size=" + Number($("#get_consistency_second").val()), null, function (second) {
                 restCall("ct/v1/get-sth-consistency?first=" + Number(first.tree_size) + "&second=" + Number(second.tree_size), null, function (result) {
@@ -122,7 +124,8 @@ $(function () {
         });
         return false;
     });
-    $("#get_entries").click(function () {
+    $("#get_entries").click(function (e) {
+        e.preventDefault();
         var last = Number($("#get_entries_second").val());
         if (last == 0) {
             restCall("ct/v1/get-sth", null, function (result) {
@@ -134,7 +137,8 @@ $(function () {
             doGetEntries(Number($("#get_entries_first").val()), last);
         }
     });
-    $("#inclusion_proof").click(function () {
+    $("#inclusion_proof").click(function (e) {
+        e.preventDefault();
         var jsonValue = $("#inclusion_proof_input").val();
         var asObj = JSON.parse(jsonValue);
         var objectHash = objectHashWithRedaction(JSON.parse(jsonValue), '');

@@ -30,14 +30,6 @@ header {
     text-align: center;
 }
 
-.consistency-diagram {
-    overflow: auto;
-}
-.entries-json {
+.entries-json, .inclusion-proof, .consistency-diagram {
     overflow: auto;    
-}
-
-#get_consistency_diagram {
-    height:100px !important;
-    width: 540px !important;
 }
