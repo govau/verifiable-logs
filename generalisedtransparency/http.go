@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,7 +39,17 @@ func (cts *Server) CreateRESTHandler() http.Handler {
 		http.Redirect(w, r, r.URL.RequestURI()+"/", http.StatusMovedPermanently)
 	})
 
-	return r
+	// Make sure we return 200 since handlers below will fall through to us
+	r.HandleFunc("/{thing:.*}", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	}).Methods("OPTIONS")
+
+	// Since we do NO cookie or basic auth, allow CORS
+	return handlers.CORS(
+		handlers.AllowedMethods([]string{"GET", "OPTIONS"}),
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedHeaders([]string{"Accept", "Content-Type"}),
+	)(r)
 }
 
 func (cts *Server) staticHandler(mime, name string) func(http.ResponseWriter, *http.Request) {
