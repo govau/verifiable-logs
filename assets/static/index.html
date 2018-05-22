@@ -27,93 +27,100 @@
                 </div>
             </div>
             <br>
-            <div class="page-wrapper container-fluid">           
-                    <h2 class="section-heading">Get Signed Tree Head</h2><br>
-                    <div class="row">
-                        <div class="col-md-4">                            
-                            <p>This operation shows the signed tree head for the log.</p>
-                            <p>
-                                <label for="get_sth_tree_size">Tree size (Leave blank for latest)</label>
-                                <input class="au-text-input" type="text" id="get_sth_tree_size" placeholder="Insert tree size" />
-                                <br />
-                                <a href="#" class="au-cta-link" id="get_sth">Fetch Signed Tree Head</a>
-                            </p>
-                        </div>
-                        <div class="col-md-8">
-                            <p class="au-display-md">Result:</p>
-                            <pre id="get_sth_result"></pre>
-                        </div>
+            <div class="page-wrapper container-fluid">
+                <h2 class="section-heading">Get Signed Tree Head</h2>
+                <br>
+                <div class="row">
+                    <div class="col-md-4">
+                        <p>This operation shows the signed tree head for the log.</p>
+                        <p>
+                            <label for="get_sth_tree_size">Tree size (Leave blank for latest)</label>
+                            <input class="au-text-input au-text-input--block" type="text" id="get_sth_tree_size" placeholder="Insert tree size" />
+                            <br />
+                            <a href="#" class="au-cta-link" id="get_sth">Fetch Signed Tree Head</a>
+                        </p>
                     </div>
-                    <hr />
-                    <h2 class="section-heading">Prove consistency</h2><br>                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <p>This operation shows the append-only property of the log.</p>
-                            <p>
-                                <label for="get_consistency_first">First size (must be greater than 0):</label>
-                                <input class="au-text-input" type="text" id="get_consistency_first" value="1" />
-                                <br />
-                                <label for="get_consistency_second">Second size (leave blank for latest): </label>
-                                <input class="au-text-input" type="text" id="get_consistency_second" />
-                                <br />
-                                <a href="#" class="au-cta-link" id="get_consistency">Fetch and show consistency proof</a>
-                            </p>
-                        </div>
-                        <div class="col-md-8">
-                            <p class="au-display-md">Result:</p>
-                            <pre id="get_consistency_result"></pre>
-                            <canvas id="get_consistency_diagram" />
-                        </div>
+                    <div class="col-md-offset-1 col-md-7">
+                        <p class="au-display-md">Result:</p>
+                        <pre id="get_sth_result"></pre>
                     </div>
+                </div>
                 <hr />
-                <h2 class="section-heading">Get Entries</h2><br>                
+                <h2 class="section-heading">Prove consistency</h2>
+                <br>
+                <div class="row">
+                    <div class="col-md-4">
+                        <p>This operation shows the append-only property of the log.</p>
+                        <p>
+                            <label for="get_consistency_first">First size (must be greater than 0):</label>
+                            <input class="au-text-input au-text-input--block" type="text" id="get_consistency_first" value="1" />
+                            <br />
+                            <label for="get_consistency_second">Second size (leave blank for latest): </label>
+                            <input class="au-text-input au-text-input--block" type="text" id="get_consistency_second" />
+                            <br />
+                            <a href="#" class="au-cta-link" id="get_consistency">Fetch and show consistency proof</a>
+                        </p>
+                    </div>
+                    <div class="col-md-offset-1 col-md-7">
+                        <p class="au-display-md">Result:</p>
+                        <pre id="get_consistency_result"></pre>
+                        <div class="consistency-diagram">
+                            <canvas id="get_consistency_diagram"/>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+                <h2 class="section-heading">Get Entries</h2>
+                <br>
                 <div class="row">
                     <div class="col-md-4">
                         <p>This operation shows the entries in the log.</p>
                         <p>
                             <label for="get_entries_first"> First: </label>
-                            <input class="au-text-input" type="text" id="get_entries_first" value="0" />
+                            <input class="au-text-input au-text-input--block" type="text" id="get_entries_first" value="0" />
                             <br />
                             <label for="get_entries_second"> End (exclusive, leave blank for all):</label>
-                            <input class="au-text-input" type="text" id="get_entries_second" />
-                            <br /> [
-                            <a href="#" class="au-cta-link" id="get_entries">Fetch entries</a> ]
+                            <input class="au-text-input au-text-input--block" type="text" id="get_entries_second" />
+                            <br />
+                            <a href="#" class="au-cta-link" id="get_entries">Fetch entries</a>
                         </p>
                     </div>
-                    <div class="col-md-8">
+                    <div class="col-md-offset-1 col-md-7">
                         <p class="au-display-md">Result:</p>
+                        <div class="entries-json">
                         <pre id="get_entries_result"></pre>
-                        <canvas id="get_entries_diagram" />
+                            <canvas id="get_entries_diagram" />
+                        </div>
                     </div>
                 </div>
                 <hr/>
                 <div class="row">
                     <div class="col-md-4">
-                            <h2 class="section-heading">Prove inclusion</h2>
+                        <h2 class="section-heading">Prove inclusion</h2>
                         <p>This operation shows proof of inclusion of an entry in the log.</p>
                         <p>
 
                             <label for="inclusion_proof_tree_size">Tree size (leave blank for latest):</label>
-                            <input class="au-text-input" type="text" id="inclusion_proof_tree_size" />
+                            <input class="au-text-input au-text-input--block" type="text" id="inclusion_proof_tree_size" />
                             <br />
                             <br />
                             <label for="inclusion_proof_input">Entry (JSON):</label>
-                            <textarea class="au-text-input" id="inclusion_proof_input" rows="4" cols="72">{"hint": "copy a value from fetch entries"}</textarea>
+                            <textarea class="au-text-input au-text-input--block" id="inclusion_proof_input" rows="4" cols="72">{"hint": "copy a value from fetch entries"}</textarea>
                             <br />
                             <a href="#" class="au-cta-link" id="inclusion_proof">Fetch and show inclusion proof</a>
                         </p>
                     </div>
-                    <div class="col-md-8">
+                    <div class="col-md-offset-1 col-md-7">
+
                         <p class="au-display-md">Result:</p>
                         <pre id="inclusion_proof_result"></pre>
                         <canvas id="inclusion_proof_diagram" />
                     </div>
                 </div>
-            </div>                
             </div>
+        </div>
         </div>
         </div>
     </main>
 </body>
-
 </html>
