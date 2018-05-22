@@ -2,6 +2,7 @@ NODE_WIDTH = 320;
 NODE_HEIGHT = 60;
 NODE_OFFSET = 10;
 NODE_BIG_OFFSET = 15;
+
 COLORS = {
     "consistency": "LightCoral",
     "inclusion": "LightCoral",
@@ -11,6 +12,7 @@ COLORS = {
     "tree_hash": "ALICEBLUE",
     "leaf_input": "#48C9B0",
 };
+
 function createRFC6962MerkleTreeLeafFromObjectHash(timestamp, objectHash) {
     // version 0x00
     // MerkleLeafType 0x00
@@ -34,6 +36,7 @@ function createRFC6962MerkleTreeLeafFromObjectHash(timestamp, objectHash) {
     }
     return binaryArrayToString(rv);
 }
+
 function restCall(path, data, success, failure) {
     var req = new XMLHttpRequest();
     req.onload = function (evt) {
@@ -62,6 +65,7 @@ function restCall(path, data, success, failure) {
     req.responseType = "arraybuffer";
     req.send(data);
 }
+
 function doGetEntries(first, lastExclusive) {
     restCall("ct/v1/get-entries?start=" + first + "&end=" + (lastExclusive - 1), null, function (result) {
         var s = "";
@@ -77,6 +81,7 @@ function doGetEntries(first, lastExclusive) {
         $("#get_entries_result").text("error: " + reason);
     });
 }
+
 $(function () {
     $("#get_sth").click(function () {
         restCall("ct/v1/get-sth?tree_size=" + Number($("#get_sth_tree_size").val()), null, function (result) {
