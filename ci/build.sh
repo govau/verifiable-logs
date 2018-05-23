@@ -30,5 +30,5 @@ cp "${ORIG_PWD}/src/deploy/verifiable-logs-server/manifest.yml" "${ORIG_PWD}/bui
 # Copy artefacts to output directory for log submitter
 mkdir -p "${ORIG_PWD}/build/verifiable-submitter"
 cp "${GOPATH}/bin/submit-from-external" "${ORIG_PWD}/build/verifiable-submitter/submit-from-external"
-cp "${ORIG_PWD}/src/deploy/submit-from-external/Procfile" "${ORIG_PWD}/build/submit-from-external/Procfile"
-cp "${ORIG_PWD}/src/deploy/submit-from-external/manifest.yml" "${ORIG_PWD}/build/submit-from-external/manifest.yml"
+cp "${ORIG_PWD}/src/deploy/verifiable-submitter/Procfile" "${ORIG_PWD}/build/verifiable-submitter/Procfile"
+cp "${ORIG_PWD}/src/deploy/verifiable-submitter/manifest.yml" "${ORIG_PWD}/build/verifiable-submitter/manifest.yml"
