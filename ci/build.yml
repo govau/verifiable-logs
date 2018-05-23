@@ -16,8 +16,5 @@ outputs:
 caches:
 - path: pkg/dep/sources
 
-params:
-  ENV_DOMAIN:
-
 run:
   path: src/ci/build.sh
