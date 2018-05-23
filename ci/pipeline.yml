@@ -9,12 +9,14 @@ jobs:
     - task: build
       file: src/ci/build.yml
     - aggregate:
-      - put: y-cf
+      - put: y-cf-verifiable-logs
+        resource: y-cf
         params:
           manifest: build/verifiable-logs-server/manifest.yml
           path: build/verifiable-logs-server
           current_app_name: verifiable-logs
-      - put: y-cf
+      - put: y-cf-submitter
+        resource: y-cf
         params:
           manifest: build/verifiable-submitter/manifest.yml
           path: build/verifiable-submitter
