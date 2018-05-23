@@ -1,0 +1,66 @@
+---
+jobs:
+- name: verifiable-logs-y
+  serial: true
+  plan:
+  - do:
+    - get: src
+      trigger: true
+    - task: build
+      file: src/ci/build.yml
+    - aggregate:
+      - put: y-cf
+        params:
+          manifest: build/verifiable-logs-server/manifest.yml
+          path: build/verifiable-logs-server
+          current_app_name: verifiable-logs
+      - put: y-cf
+        params:
+          manifest: build/verifiable-submitter/manifest.yml
+          path: build/verifiable-submitter
+          current_app_name: verifiable-submitter
+    on_success:
+      put: slack
+      params:
+        text: |
+          :white_check_mark: $BUILD_JOB_NAME SUCCESS
+          <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+    on_failure:
+      put: slack
+      params:
+        text: |
+          :x: $BUILD_JOB_NAME FAILED
+          <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|View build details>
+
+image_resource:
+  type: docker-image
+  source:
+    repository: govau/cga-cf-bosh-cli
+    tag: latest
+
+resources:
+- name: src
+  type: git
+  source:
+    uri: https://github.com/govau/verifiable-logs
+    branch: master
+
+- name: y-cf
+  type: cf
+  source:
+    api: https://api.system.y.cld.gov.au
+    username: ci-cloud-verifiable-logs
+    password: ((y-password))
+    organization: dta
+    space: cloud
+
+- name: slack
+  type: slack-notification
+  source:
+    url: ((slack-webhook-url))
+
+resource_types:
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: cfcommunity/slack-notification-resource
