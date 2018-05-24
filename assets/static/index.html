@@ -11,7 +11,7 @@
 
     <script type="text/javascript" src="../../sha256.js"></script>
     <script type="text/javascript" src="../../verifiable.js"></script>
-    <script src="../../script.js"></script>
+
 </head>
 
 <body>
@@ -64,9 +64,6 @@
                     <div class="col-md-offset-1 col-md-7">
                         <p class="au-display-md">Result:</p>
                         <pre id="get_consistency_result"></pre>
-                        <div class="consistency-diagram">
-                            <canvas id="get_consistency_diagram" />
-                        </div>
                     </div>
                 </div>
                 <hr />
@@ -105,7 +102,6 @@
                             <br />
                             <br />
                             <label for="inclusion_proof_input">Entry (JSON):</label>
-                            <textarea class="au-text-input au-text-input--block" id="inclusion_proof_input" rows="4" cols="72">{"hint": "copy a value from fetch entries"}</textarea>
                             <br />
                             <a href="#" class="au-cta-link" id="inclusion_proof">Fetch and show inclusion proof</a>
                         </p>
@@ -114,9 +110,7 @@
 
                         <p class="au-display-md">Result:</p>
                         <pre id="inclusion_proof_result"></pre>
-                        <div class="inclusion-proof">
                             <canvas id="inclusion_proof_diagram" />
-                        </div>
                     </div>
                 </div>
             </div>

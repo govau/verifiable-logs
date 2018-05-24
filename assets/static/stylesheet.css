@@ -5,6 +5,12 @@
     margin-left: 40px !important;
     margin-right: 40px !important;
 }
+@media only screen and (max-width: 600px) {
+    .page-wrapper {
+        margin-left: 5px !important;
+        margin-right: 5px !important;
+    }
+}
 
 body {
     margin:0px;
@@ -32,4 +38,12 @@ header {
 
 .entries-json, .inclusion-proof, .consistency-diagram {
     overflow: auto;    
+}
+
+.merkel-tree {
+    /* width: 800px !important; height:600px !important; */
+    background-color: white;
+}
+canvas {
+    zoom: 30% !important;
 }
