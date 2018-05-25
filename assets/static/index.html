@@ -11,6 +11,7 @@
 
     <script type="text/javascript" src="../../sha256.js"></script>
     <script type="text/javascript" src="../../verifiable.js"></script>
+    <script src="../../panzoom.js"></script>
 
 </head>
 
@@ -66,6 +67,13 @@
                         <pre id="get_consistency_result"></pre>
                     </div>
                 </div>
+                <div class="row">
+                    <section class="merkel-tree">
+                        <div>
+                        <canvas id="get_consistency_diagram" />
+                    </div>
+                    </section>
+                </div>
                 <hr />
                 <h2 class="section-heading">Get Entries</h2>
                 <br>
@@ -102,6 +110,7 @@
                             <br />
                             <br />
                             <label for="inclusion_proof_input">Entry (JSON):</label>
+                            <textarea class="au-text-input au-text-input--block" id="inclusion_proof_input" rows="4" cols="72" placeholder='{"hint": "copy a value from fetch entries"}'></textarea>
                             <br />
                             <a href="#" class="au-cta-link" id="inclusion_proof">Fetch and show inclusion proof</a>
                         </p>
@@ -110,14 +119,23 @@
 
                         <p class="au-display-md">Result:</p>
                         <pre id="inclusion_proof_result"></pre>
+                    </div>
+                </div>
+                <div class="row">
+                        <section class="merkel-tree">
+
+                    <div class="inclusion-proof">
                             <canvas id="inclusion_proof_diagram" />
                     </div>
+                    </section>
                 </div>
             </div>
         </div>
         </div>
         </div>
     </main>
+    <script src="../../script.js"></script>
+
 </body>
 
 </html>
