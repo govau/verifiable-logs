@@ -82,6 +82,20 @@ function doGetEntries(first, lastExclusive) {
     });
 }
 
+//enables panning and mouse zooming feature
+function enableZoomPan(panzoom) {
+    panzoom.parent().on('mousewheel.focal', function( e ) {
+        e.preventDefault();
+        var delta = e.delta || e.originalEvent.wheelDelta;
+        var zoomOut = delta ? delta < 0 : e.originalEvent.deltaY > 0;
+        panzoom.panzoom('zoom', zoomOut, {
+          increment: 0.15,
+          animate: false,
+          focal: e
+        });
+      });
+}
+
 $(function () {
     $("#get_sth").click(function (e) {
         e.preventDefault();
@@ -171,33 +185,7 @@ $(function () {
             $("#inclusion_proof_result").text("error: " + reason);
         });
     });
+
+    enableZoomPan($("#get_consistency_diagram").panzoom({contain: 'invert'})); // keeps canvas inside parent div
+    enableZoomPan($("#inclusion_proof_diagram").panzoom({contain: 'invert'})); // keeps canvas inside parent div
 });
-
-var panzoomConsistency = $("#get_consistency_diagram").panzoom({
-    //keeps canvas inside parent div
-    contain: 'invert',
-})
-
-var panzoomInclusionProof = $("#inclusion_proof_diagram").panzoom({
-    //keeps canvas inside parent div    
-    contain: 'invert',
-})
-
-//enables panning and mouse zooming feature
-function enableZoomPan(panzoom) {
-    panzoom.parent().on('mousewheel.focal', function( e ) {
-        e.preventDefault();
-        console.log(e);
-        var delta = e.delta || e.originalEvent.wheelDelta;
-        var zoomOut = delta ? delta < 0 : e.originalEvent.deltaY > 0;
-        panzoom.panzoom('zoom', zoomOut, {
-          increment: 0.15,
-          animate: false,
-          focal: e
-        });
-      });
-}
-
-this.enableZoomPan(panzoomConsistency);
-this.enableZoomPan(panzoomInclusionProof);
-
