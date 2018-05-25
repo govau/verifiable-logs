@@ -38,6 +38,7 @@ func (cts *Server) CreateRESTHandler() http.Handler {
 	r.HandleFunc("/furnace.min.css", cts.staticHandler("text/css", "furnace.min.css")).Methods("GET")
 	r.HandleFunc("/stylesheet.css", cts.staticHandler("text/css", "stylesheet.css")).Methods("GET")
 	r.HandleFunc("/", cts.staticHandler("text/html", "root.html")).Methods("GET")
+	r.HandleFunc("/panzoom.js", cts.staticHandler("application/javascript", "panzoom.js")).Methods("GET"))
 
 	// Convenience redirect
 	r.HandleFunc("/dataset/{logname}", func(w http.ResponseWriter, r *http.Request) {

@@ -67,7 +67,7 @@ function restCall(path, data, success, failure) {
 }
 
 function doGetEntries(first, lastExclusive) {
-    restCall("https://verifiable-logs.apps.y.cld.gov.au/dataset/b718232a-bc8d-49c0-9c1f-33c31b57cd88/ct/v1/get-entries?start=" + first + "&end=" + (lastExclusive - 1), null, function (result) {
+    restCall("ct/v1/get-entries?start=" + first + "&end=" + (lastExclusive - 1), null, function (result) {
         var s = "";
         for (var i = 0; i < result.entries.length; i++) {
             s += atob(result.entries[i].extra_data) + "\n";
@@ -85,7 +85,7 @@ function doGetEntries(first, lastExclusive) {
 $(function () {
     $("#get_sth").click(function (e) {
         e.preventDefault();
-        restCall("https://verifiable-logs.apps.y.cld.gov.au/dataset/b718232a-bc8d-49c0-9c1f-33c31b57cd88/ct/v1/get-sth?tree_size=" + Number($("#get_sth_tree_size").val()), null, function (result) {
+        restCall("ct/v1/get-sth?tree_size=" + Number($("#get_sth_tree_size").val()), null, function (result) {
             var s = "";
             s += "tree size: " + result.tree_size + "\n";
             s += "root hash: " + result.sha256_root_hash + "\n";
@@ -97,9 +97,9 @@ $(function () {
     });
     $("#get_consistency").click(function (e) {
         e.preventDefault();
-        restCall("https://verifiable-logs.apps.y.cld.gov.au/dataset/b718232a-bc8d-49c0-9c1f-33c31b57cd88/ct/v1/get-sth?tree_size=" + Number($("#get_consistency_first").val()), null, function (first) {
-            restCall("https://verifiable-logs.apps.y.cld.gov.au/dataset/b718232a-bc8d-49c0-9c1f-33c31b57cd88/ct/v1/get-sth?tree_size=" + Number($("#get_consistency_second").val()), null, function (second) {
-                restCall("https://verifiable-logs.apps.y.cld.gov.au/dataset/b718232a-bc8d-49c0-9c1f-33c31b57cd88/ct/v1/get-sth-consistency?first=" + Number(first.tree_size) + "&second=" + Number(second.tree_size), null, function (result) {
+        restCall("ct/v1/get-sth?tree_size=" + Number($("#get_consistency_first").val()), null, function (first) {
+            restCall("ct/v1/get-sth?tree_size=" + Number($("#get_consistency_second").val()), null, function (second) {
+                restCall("ct/v1/get-sth-consistency?first=" + Number(first.tree_size) + "&second=" + Number(second.tree_size), null, function (result) {
                     var s = "";
                     s += "first tree size: " + first.tree_size + "\n";
                     s += "first root hash: " + first.sha256_root_hash + "\n";
@@ -128,7 +128,7 @@ $(function () {
         e.preventDefault();
         var last = Number($("#get_entries_second").val());
         if (last == 0) {
-            restCall("https://verifiable-logs.apps.y.cld.gov.au/dataset/b718232a-bc8d-49c0-9c1f-33c31b57cd88/ct/v1/get-sth", null, function (result) {
+            restCall("ct/v1/get-sth", null, function (result) {
                 doGetEntries(Number($("#get_entries_first").val()), result.tree_size);
             }, function (reason) {
                 $("#get_entries_result").text("error: " + reason);
@@ -142,11 +142,11 @@ $(function () {
         var jsonValue = $("#inclusion_proof_input").val();
         var asObj = JSON.parse(jsonValue);
         var objectHash = objectHashWithRedaction(JSON.parse(jsonValue), '');
-        restCall("https://verifiable-logs.apps.y.cld.gov.au/dataset/b718232a-bc8d-49c0-9c1f-33c31b57cd88/ct/v1/get-sth?tree_size=" + Number($("#inclusion_proof_tree_size").val()), null, function (sth) {
-            restCall("https://verifiable-logs.apps.y.cld.gov.au/dataset/b718232a-bc8d-49c0-9c1f-33c31b57cd88/ct/v1/get-objecthash?hash=" + encodeURIComponent(btoa(objectHash)), null, function (sct) {
+        restCall("ct/v1/get-sth?tree_size=" + Number($("#inclusion_proof_tree_size").val()), null, function (sth) {
+            restCall("ct/v1/get-objecthash?hash=" + encodeURIComponent(btoa(objectHash)), null, function (sct) {
                 var mtlInput = createRFC6962MerkleTreeLeafFromObjectHash(sct.timestamp, objectHash);
                 var leafHash = leafMerkleTreeHash(mtlInput);
-                restCall("https://verifiable-logs.apps.y.cld.gov.au/dataset/b718232a-bc8d-49c0-9c1f-33c31b57cd88/ct/v1/get-proof-by-hash?hash=" + encodeURIComponent(btoa(leafHash)) + "&tree_size=" + sth.tree_size, null, function (inclusionProof) {
+                restCall("ct/v1/get-proof-by-hash?hash=" + encodeURIComponent(btoa(leafHash)) + "&tree_size=" + sth.tree_size, null, function (inclusionProof) {
                     var s = "";
                     s += "calculated object hash: " + btoa(objectHash) + "\n";
                     s += "retrieved sct timestamp: " + sct.timestamp + "\n";
