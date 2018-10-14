@@ -11,6 +11,7 @@ import (
 
 	cfenv "github.com/cloudfoundry-community/go-cfenv"
 	"github.com/continusec/verifiabledatastructures/pb"
+	"github.com/continusec/verifiabledatastructures/storage/postgres"
 	"github.com/jackc/pgx"
 
 	"github.com/continusec/verifiabledatastructures/mutator/instant"
@@ -19,7 +20,6 @@ import (
 	"github.com/govau/cf-common/env"
 	"github.com/govau/cf-common/jobs"
 	"github.com/govau/verifiable-logs/generalisedtransparency"
-	"github.com/govau/verifiable-logs/postgres"
 )
 
 func main() {
