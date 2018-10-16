@@ -1,0 +1,11 @@
+[[constraint]]
+  branch = "master"
+  name = "github.com/continusec/verifiabledatastructures"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/govau/verifiable-logs"
+
+[prune]
+  go-tests = true
+  unused-packages = true
