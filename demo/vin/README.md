@@ -2,6 +2,15 @@
 
 This application provides a service whereby participants can submit updates to a centralised ledger for updates to which jurisdiction has a vehicle (identified by VIN) registered to it.
 
+## Get source
+
+```bash
+# ignore warning about no buildable files
+go get github.com/govau/verifiable-logs/demo/vin
+cd ${GOPATH-$HOME/go}/src/github.com/govau/verifiable-logs/demo/vin
+dep ensure
+```
+
 ## Bootstrap certs
 
 Before deploying, we create a simple CA, and we use this to issue a client certificate to each jurisdiction:
