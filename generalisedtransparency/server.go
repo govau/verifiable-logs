@@ -1,10 +1,19 @@
 package generalisedtransparency
 
 import (
+	"net/http"
 	"sync"
+
+	"github.com/google/certificate-transparency-go"
 
 	"github.com/continusec/verifiabledatastructures/verifiable"
 )
+
+// SubmissionValidator validates (for the purpose of accepting it into the log) an objecthash from the request
+// Returns key (for duplicates), followed by MerkleTreeLeaf structure (timestamp will be set by caller) then optional extra data
+type SubmissionValidator interface {
+	ValidateSubmission(vlog *verifiable.Log, r *http.Request) ([]byte, *ct.MerkleTreeLeaf, []byte, error)
+}
 
 // Server implements an RFC6962-style set of verifiable logs servers over REST
 type Server struct {
@@ -20,8 +29,8 @@ type Server struct {
 	// ReadAPIKey is the API key to use to write to Service (used by /add-objecthash only)
 	WriteAPIKey string
 
-	// ExternalAddKey is the API key that clients need to send us in order to be allowed to call /add-objecthash
-	ExternalAddKey string
+	// InputValidator checks if it is valid request to accept input from
+	InputValidator SubmissionValidator
 
 	// Reader is a storage layer where we can read log signing keys, as well as published STHes and an index of objecthash to MerkleTreeLeaf.
 	Reader verifiable.StorageReader

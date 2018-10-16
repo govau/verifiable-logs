@@ -33,7 +33,7 @@ type LogSubmitter struct {
 	logClients     map[string]*LogClient
 }
 
-// Converts JSON number to an integer
+// JSONIntID converts JSON number to an integer
 func JSONIntID(val interface{}) (int, error) {
 	// Since this data comes from JSON normally, it is braindead regarding integers
 	idAsFloat, ok := val.(float64)

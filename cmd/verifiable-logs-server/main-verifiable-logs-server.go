@@ -123,7 +123,7 @@ func main() {
 		WriteAPIKey:        "write",
 		Reader:             db,
 		Writer:             db,
-		ExternalAddKey:     envLookup.MustString("VDB_SECRET"),
+		InputValidator:     generalisedtransparency.APIKeyValidator(envLookup.MustString("VDB_SECRET")),
 		TableNameValidator: tableValidator,
 	}).CreateRESTHandler()))
 }

@@ -50,7 +50,15 @@
   revision = "b3d8a3162c47168a51471eb5e884476242fef4f7"
 
 [[projects]]
-  digest = "1:17fe264ee908afc795734e8c4e63db2accabaf57326dbf21763a7d6b86096260"
+  branch = "master"
+  digest = "1:095c5b12709e45a61ff2820c2bf81c7de7a030629cb728fc7a2abec35b5cbadb"
+  name = "github.com/fullsailor/pkcs7"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "8306686428a5fe132eac8cb7c4848af725098bd4"
+
+[[projects]]
+  digest = "1:4c0989ca0bcd10799064318923b9bc2db6b4d6338dd75f3f2d86c3511aaaf5cf"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -60,12 +68,12 @@
     "ptypes/timestamp",
   ]
   pruneopts = "UT"
-  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
-  version = "v1.1.0"
+  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "objecthash"
-  digest = "1:ad0d604b6246235c3b11729308cbbc4b49a125f5258caa4099312643ebc3920e"
+  digest = "1:79a6459ccee58b84b7c7deb65c4c873579df200238e0f23217c8ff597c4ec032"
   name = "github.com/google/certificate-transparency-go"
   packages = [
     ".",
@@ -78,46 +86,46 @@
     "x509/pkix",
   ]
   pruneopts = "UT"
-  revision = "fc03246b9e845fb7334db3216098f75b980c92e6"
+  revision = "8508ab324a3cc98ef40c62dd18ae2f6b7908cdb0"
   source = "github.com/govau/certificate-transparency-go"
 
 [[projects]]
-  digest = "1:160eabf7a69910fd74f29c692718bc2437c1c1c7d4c9dea9712357752a70e5df"
+  digest = "1:c79fb010be38a59d657c48c6ba1d003a8aa651fa56b579d959d74573b7dff8e1"
   name = "github.com/gorilla/context"
   packages = ["."]
   pruneopts = "UT"
-  revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
-  version = "v1.1"
+  revision = "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
+  version = "v1.1.1"
 
 [[projects]]
-  digest = "1:185a43b59a1f4e7ad4e7ccafb8a1538193d897a2a75be16dda093ec42ad231cf"
+  digest = "1:664d37ea261f0fc73dd17f4a1f5f46d01fbb0b0d75f6375af064824424109b7d"
   name = "github.com/gorilla/handlers"
   packages = ["."]
   pruneopts = "UT"
-  revision = "90663712d74cb411cbef281bc1e08c19d1a76145"
-  version = "v1.3.0"
+  revision = "7e0847f9db758cdebd26c149d0ae9d5d0b9c98ce"
+  version = "v1.4.0"
 
 [[projects]]
-  digest = "1:88aa9e326e2bd6045a46e00a922954b3e1a9ac5787109f49ac85366df370e1e5"
+  digest = "1:e73f5b0152105f18bc131fba127d9949305c8693f8a762588a82a48f61756f5f"
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "53c1911da2b537f792e7cafcb446b05ffe33b996"
-  version = "v1.6.1"
+  revision = "e3702bed27f0d39777b0b37b664b6280e8ef8fbf"
+  version = "v1.6.2"
 
 [[projects]]
-  branch = "master"
-  digest = "1:bdf9d990588ad6418f076f7e4526fce5cb49d4beb888764bd8c41636f374e788"
+  digest = "1:e9d566a50f83455ccfb2587860750d68343c884b1dfafec504fa6cef17538cc2"
   name = "github.com/govau/cf-common"
   packages = [
     "env",
     "jobs",
   ]
   pruneopts = "UT"
-  revision = "ec7986c271ac0b9196b0291981305da37c9c4a24"
+  revision = "f85526034745406f35121d889ab195dc307037c2"
+  version = "v0.0.6"
 
 [[projects]]
-  digest = "1:e63f5794be681edd5050b092768bc8b15912aa513e4acfd3083e32a9ea895360"
+  digest = "1:8dfbec76b4834d96c37ba4c4969fc47c9a15e67c5a7eecfa031fbe67dab50429"
   name = "github.com/jackc/pgx"
   packages = [
     ".",
@@ -128,16 +136,16 @@
     "pgtype",
   ]
   pruneopts = "UT"
-  revision = "da3231b0b66e2e74cdb779f1d46c5e958ba8be27"
-  version = "v3.1.0"
+  revision = "89f1e6ac7276b61d885db5e5aed6fcbedd1c7e31"
+  version = "v3.2.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:2514da1e59c0a936d8c1e0fbf5592267a3c5893eb4555ce767bb54d149e9cf6e"
+  digest = "1:53bc4cd4914cd7cd52139990d5170d6dc99067ae31c56530621b18b35fc30318"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   pruneopts = "UT"
-  revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
+  revision = "3536a929edddb9a5b34bd6861dc4a9647cb459fe"
+  version = "v1.1.2"
 
 [[projects]]
   digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
@@ -157,31 +165,39 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:89095b63e45d70658f6e1c68597ec77371e746e856f8ed105751f3f89919e0d5"
+  digest = "1:3bd2ff2e5cc5ab98739479dbd539473c92b29b9c11632b6fcbbadad373b55bfd"
   name = "golang.org/x/crypto"
   packages = [
     "cryptobyte",
     "cryptobyte/asn1",
   ]
   pruneopts = "UT"
-  revision = "374053ea96cb300f8671b8d3b07edeeb06e203b4"
+  revision = "0c41d7ab0a0ee717d4590a44bcb987dfd9e183eb"
 
 [[projects]]
   branch = "master"
-  digest = "1:5b6dd7f0a9a2e2697416de7617f31981e8334773ad1098324725d5d76f332238"
+  digest = "1:1ae047ded1ddcbe0eca8b0772e3ff2c10e354db4c42c65b96d0386883e63904d"
   name = "golang.org/x/net"
   packages = [
     "context",
     "context/ctxhttp",
+    "http/httpguts",
     "http2",
     "http2/hpack",
     "idna",
     "internal/timeseries",
-    "lex/httplex",
     "trace",
   ]
   pruneopts = "UT"
-  revision = "24dd3780ca4f75fed9f321890729414a4b5d3f13"
+  revision = "49bb7cea24b1df9410e1712aa6433dae904ff66a"
+
+[[projects]]
+  branch = "master"
+  digest = "1:0a40b0bdd57a93e741d8557465be3a2edeec408e9b6399586ad65bbe8e355796"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  pruneopts = "UT"
+  revision = "fa43e7bc11baaae89f3f902b2b4d832b68234844"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -208,14 +224,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:cd018653a358d4b743a9d3bee89e825521f2ab2f2ec0770164bf7632d8d73ab7"
+  digest = "1:56b0bca90b7e5d1facf5fbdacba23e4e0ce069d25381b8e2f70ef1e7ebfb9c1a"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
-  revision = "f8c8703595236ae70fdf8789ecb656ea0bcdcf46"
+  revision = "af9cb2a35e7f169ec875002c1829c9b315cddc04"
 
 [[projects]]
-  digest = "1:b6f2a6cab17082980bc075c33335d0b8efabe1732506e6452898253fddc9231f"
+  digest = "1:ab8e92d746fb5c4c18846b0879842ac8e53b3d352449423d0924a11f1020ae1b"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -227,9 +243,13 @@
     "credentials",
     "encoding",
     "encoding/proto",
-    "grpclb/grpc_lb_v1/messages",
     "grpclog",
     "internal",
+    "internal/backoff",
+    "internal/channelz",
+    "internal/envconfig",
+    "internal/grpcrand",
+    "internal/transport",
     "keepalive",
     "metadata",
     "naming",
@@ -240,11 +260,10 @@
     "stats",
     "status",
     "tap",
-    "transport",
   ]
   pruneopts = "UT"
-  revision = "8e4536a86ab602859c20df5ebfd0bd4228d08655"
-  version = "v1.10.0"
+  revision = "8dea3dc473e90c8179e519d91302d0597c0ca1d1"
+  version = "v1.15.0"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -258,6 +277,7 @@
     "github.com/continusec/verifiabledatastructures/pb",
     "github.com/continusec/verifiabledatastructures/storage/postgres",
     "github.com/continusec/verifiabledatastructures/verifiable",
+    "github.com/fullsailor/pkcs7",
     "github.com/golang/protobuf/proto",
     "github.com/google/certificate-transparency-go",
     "github.com/google/certificate-transparency-go/client",

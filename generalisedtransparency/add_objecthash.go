@@ -2,7 +2,6 @@ package generalisedtransparency
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -14,21 +13,16 @@ import (
 )
 
 func (cts *Server) handleAdd(vlog *verifiable.Log, r *http.Request) (interface{}, error) {
-	if r.Header.Get("Authorization") != cts.ExternalAddKey {
-		return nil, verifiable.ErrNotAuthorized
-	}
-
 	if r.Method != http.MethodPost {
 		return nil, verifiable.ErrInvalidRequest
 	}
 
-	var ohr ct.AddObjectHashRequest
-	err := json.NewDecoder(r.Body).Decode(&ohr)
+	dupKey, mtl, extraData, err := cts.InputValidator.ValidateSubmission(vlog, r)
 	if err != nil {
-		return nil, verifiable.ErrInvalidRequest
+		return nil, err
 	}
 
-	existingSCT, err := cts.findSCT(r.Context(), vlog, ohr.Hash[:])
+	existingSCT, err := cts.findSCT(r.Context(), vlog, dupKey)
 	switch err {
 	case nil:
 		return existingSCT, nil
@@ -39,13 +33,8 @@ func (cts *Server) handleAdd(vlog *verifiable.Log, r *http.Request) (interface{}
 	}
 
 	// Now, add it
-	edBytes, err := json.Marshal(ohr.ExtraData)
-	if err != nil {
-		return nil, err
-	}
-
-	ts := time.Now().UnixNano() / (1000 * 1000)
-	mtl := ct.CreateObjectHashMerkleTreeLeaf(ohr.Hash, uint64(ts))
+	ts := uint64(time.Now().UnixNano() / (1000 * 1000))
+	mtl.TimestampedEntry.Timestamp = ts
 	mtlBytes, err := tls.Marshal(*mtl)
 	if err != nil {
 		return nil, err
@@ -53,7 +42,7 @@ func (cts *Server) handleAdd(vlog *verifiable.Log, r *http.Request) (interface{}
 
 	_, err = vlog.Add(r.Context(), &pb.LeafData{
 		LeafInput: mtlBytes,
-		ExtraData: edBytes,
+		ExtraData: extraData,
 	})
 	if err != nil {
 		return nil, err
@@ -89,7 +78,7 @@ func (cts *Server) handleAdd(vlog *verifiable.Log, r *http.Request) (interface{}
 
 	sct := govpb.AddResponse{
 		Signature: sigBytes,
-		Timestamp: ts,
+		Timestamp: int64(ts),
 	}
 
 	// Save it out
@@ -97,7 +86,7 @@ func (cts *Server) handleAdd(vlog *verifiable.Log, r *http.Request) (interface{}
 	if err != nil {
 		return nil, err
 	}
-	tsKey := append([]byte("sct"), ohr.Hash[:]...)
+	tsKey := append([]byte("sct"), dupKey...)
 
 	err = cts.Writer.ExecuteUpdate(r.Context(), ns[:], func(ctx context.Context, kw verifiable.KeyWriter) error {
 		return kw.Set(ctx, tsKey, &sct)
