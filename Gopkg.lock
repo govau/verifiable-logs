@@ -36,13 +36,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8b114328a9ecbd61f7761f3e7bbbcd671ce80acce2bfe3c68208476c78ff368d"
+  digest = "1:dcc86ac7f26c1cc5bc7dcd3d146c208c2da153e0f2bd78f8b56db3f7d2a3e938"
   name = "github.com/continusec/verifiabledatastructures"
   packages = [
     "merkle",
     "mutator/instant",
     "oracle/policy",
     "pb",
+    "storage/memory",
     "storage/postgres",
     "verifiable",
   ]
@@ -275,6 +276,7 @@
     "github.com/continusec/verifiabledatastructures/mutator/instant",
     "github.com/continusec/verifiabledatastructures/oracle/policy",
     "github.com/continusec/verifiabledatastructures/pb",
+    "github.com/continusec/verifiabledatastructures/storage/memory",
     "github.com/continusec/verifiabledatastructures/storage/postgres",
     "github.com/continusec/verifiabledatastructures/verifiable",
     "github.com/fullsailor/pkcs7",

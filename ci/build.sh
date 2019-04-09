@@ -15,8 +15,9 @@ cd "${GOPATH}/src/github.com/govau/verifiable-logs"
 # Install go deps
 dep ensure
 
+# We no longer run go generate as the generated assets / proto are now in source control
 # Generate proto and assets.go
-go generate
+#go generate
 
 # Build the things
 go install github.com/govau/verifiable-logs/cmd/{verifiable-logs-server,submit-from-external,submit-rows-to-logs,verifiable-log-tool}
